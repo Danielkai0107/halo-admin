@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 開發模式 - 允許所有讀寫（僅用於開發測試）
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+// 生產環境規則（待啟用）
+/*
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 輔助函數
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserData().role == 'SUPER_ADMIN';
+    }
+    
+    function isTenantAdmin() {
+      return isAuthenticated() && getUserData().role == 'TENANT_ADMIN';
+    }
+    
+    function belongsToTenant(tenantId) {
+      return isAuthenticated() && getUserData().tenantId == tenantId;
+    }
+    
+    // Users 集合
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+    
+    // Tenants 集合
+    match /tenants/{tenantId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+      
+      // 子集合：成員
+      match /members/{memberId} {
+        allow read: if isAuthenticated();
+        allow write: if isSuperAdmin() || (isTenantAdmin() && belongsToTenant(tenantId));
+      }
+    }
+    
+    // Elders 集合
+    match /elders/{elderId} {
+      allow read: if isAuthenticated();
+      allow create: if isSuperAdmin() || isTenantAdmin();
+      allow update, delete: if isSuperAdmin() || (isTenantAdmin() && belongsToTenant(resource.data.tenantId));
+      
+      // 子集合：活動記錄
+      match /activities/{activityId} {
+        allow read: if isAuthenticated();
+        allow write: if isSuperAdmin() || isTenantAdmin();
+      }
+      
+      // 子集合：位置記錄
+      match /locations/{locationId} {
+        allow read: if isAuthenticated();
+        allow write: if isSuperAdmin() || isTenantAdmin();
+      }
+    }
+    
+    // Devices 集合
+    match /devices/{deviceId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isTenantAdmin();
+    }
+    
+    // Gateways 集合
+    match /gateways/{gatewayId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isTenantAdmin();
+    }
+    
+    // Alerts 集合
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isTenantAdmin();
+    }
+    
+    // AppUsers 集合
+    match /appUsers/{appUserId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isTenantAdmin();
+    }
+  }
+}
+*/

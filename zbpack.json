@@ -1,0 +1,9 @@
+{
+  "$schema": "https://zeabur.com/schemas/zbpack.json",
+  "build_command": "pnpm install && pnpm build",
+  "start_command": null,
+  "static": {
+    "output_dir": "dist",
+    "spa": true
+  }
+}
