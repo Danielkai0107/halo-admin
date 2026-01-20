@@ -1,15 +1,9 @@
 import * as admin from 'firebase-admin';
 import { onRequest } from 'firebase-functions/v2/https';
 
-interface ServiceUUID {
-  uuid: string;
-  name: string;
-  description?: string;
-}
-
 interface UuidResponse {
   success: boolean;
-  uuids: ServiceUUID[];
+  uuids: string[];
   count: number;
   timestamp: number;
   error?: string;
@@ -59,17 +53,13 @@ export const getServiceUuids = onRequest(
 
       console.log(`Found ${uuidsQuery.docs.length} active service UUIDs`);
 
-      // Format UUID list
-      const uuids: ServiceUUID[] = uuidsQuery.docs
+      // Extract UUID strings only
+      const uuids: string[] = uuidsQuery.docs
         .map(doc => {
           const data = doc.data();
-          return {
-            uuid: data.uuid || '',
-            name: data.name || 'Unnamed',
-            description: data.description,
-          };
+          return data.uuid || '';
         })
-        .filter(item => item.uuid); // Only include items with valid UUID
+        .filter(uuid => uuid); // Only include non-empty UUIDs
 
       console.log(`Returning ${uuids.length} valid service UUIDs`);
 

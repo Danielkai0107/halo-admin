@@ -73,17 +73,13 @@ exports.getServiceUuids = (0, https_1.onRequest)({
             .where('isActive', '==', true)
             .get();
         console.log(`Found ${uuidsQuery.docs.length} active service UUIDs`);
-        // Format UUID list
+        // Extract UUID strings only
         const uuids = uuidsQuery.docs
             .map(doc => {
             const data = doc.data();
-            return {
-                uuid: data.uuid || '',
-                name: data.name || 'Unnamed',
-                description: data.description,
-            };
+            return data.uuid || '';
         })
-            .filter(item => item.uuid); // Only include items with valid UUID
+            .filter(uuid => uuid); // Only include non-empty UUIDs
         console.log(`Returning ${uuids.length} valid service UUIDs`);
         // Return response
         const response = {
