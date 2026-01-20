@@ -25,8 +25,8 @@ interface BeaconData {
 
 interface RequestPayload {
   gateway_id: string;  // MAC Address for commercial receivers, IMEI for mobile phones
-  lat: number;
-  lng: number;
+  lat?: number;        // Optional - will use gateway's fixed location if not provided
+  lng?: number;        // Optional - will use gateway's fixed location if not provided
   timestamp: number;
   beacons: BeaconData[];
 }
@@ -94,12 +94,17 @@ function validatePayload(body: any): { valid: boolean; error?: string } {
     return { valid: false, error: 'Missing or invalid gateway_id' };
   }
 
-  if (typeof body.lat !== 'number' || body.lat < -90 || body.lat > 90) {
-    return { valid: false, error: 'Missing or invalid lat (must be between -90 and 90)' };
+  // lat and lng are optional, but if provided, must be valid
+  if (body.lat !== undefined && body.lat !== null) {
+    if (typeof body.lat !== 'number' || body.lat < -90 || body.lat > 90) {
+      return { valid: false, error: 'Invalid lat (must be between -90 and 90)' };
+    }
   }
 
-  if (typeof body.lng !== 'number' || body.lng < -180 || body.lng > 180) {
-    return { valid: false, error: 'Missing or invalid lng (must be between -180 and 180)' };
+  if (body.lng !== undefined && body.lng !== null) {
+    if (typeof body.lng !== 'number' || body.lng < -180 || body.lng > 180) {
+      return { valid: false, error: 'Invalid lng (must be between -180 and 180)' };
+    }
   }
 
   if (!body.timestamp || typeof body.timestamp !== 'number') {
@@ -223,8 +228,6 @@ async function getOrCreateGateway(
     name: `Auto-Gateway-${gatewayId.substring(0, 8)}`,
     location: `Auto-registered at ${new Date().toISOString()}`,
     type: 'MOBILE' as const,
-    latitude: payload.lat,
-    longitude: payload.lng,
     tenantId: null,
     isActive: true,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -239,6 +242,15 @@ async function getOrCreateGateway(
   // Only add imei if it looks like an IMEI or device ID
   if (!gatewayId.includes(':') && gatewayId.length >= 10) {
     newGateway.imei = gatewayId;
+  }
+  
+  // Only add latitude/longitude if provided (not undefined)
+  if (payload.lat !== undefined && payload.lat !== null) {
+    newGateway.latitude = payload.lat;
+  }
+  
+  if (payload.lng !== undefined && payload.lng !== null) {
+    newGateway.longitude = payload.lng;
   }
   
   const docRef = await db.collection('gateways').add(newGateway);
@@ -261,21 +273,33 @@ async function getOrCreateGateway(
 }
 
 /**
- * Determine the location to use based on gateway type
+ * Determine the location to use based on gateway type and available data
  */
-function determineLocation(gateway: GatewayInfo, uploadedLat: number, uploadedLng: number): { lat: number; lng: number } {
-  // For MOBILE gateways, always use the uploaded GPS location
+function determineLocation(
+  gateway: GatewayInfo, 
+  uploadedLat: number | undefined, 
+  uploadedLng: number | undefined
+): { lat: number; lng: number } {
+  // For MOBILE gateways, prefer uploaded GPS location
   if (gateway.type === 'MOBILE') {
-    return { lat: uploadedLat, lng: uploadedLng };
+    if (uploadedLat !== undefined && uploadedLng !== undefined) {
+      return { lat: uploadedLat, lng: uploadedLng };
+    }
   }
   
-  // For GENERAL and BOUNDARY gateways, prefer database location if available
-  if (gateway.latitude && gateway.longitude) {
+  // For GENERAL and BOUNDARY gateways, prefer database location
+  if (gateway.latitude !== undefined && gateway.longitude !== undefined) {
     return { lat: gateway.latitude, lng: gateway.longitude };
   }
   
-  // Fallback to uploaded location
-  return { lat: uploadedLat, lng: uploadedLng };
+  // If no database location, use uploaded location (if available)
+  if (uploadedLat !== undefined && uploadedLng !== undefined) {
+    return { lat: uploadedLat, lng: uploadedLng };
+  }
+  
+  // Final fallback: use default location (0, 0)
+  console.warn(`No location available for gateway ${gateway.id}, using default (0, 0)`);
+  return { lat: 0, lng: 0 };
 }
 
 /**
@@ -925,8 +949,8 @@ export const receiveBeaconData = onRequest(
           processBeacon(
             beacon,
             gateway,
-            payload.lat,
-            payload.lng,
+            payload.lat ?? 0,  // Use 0 if not provided
+            payload.lng ?? 0,  // Use 0 if not provided
             payload.timestamp,
             db
           )
