@@ -8,6 +8,7 @@ import { verifyUserTenant } from './line/verifyUserTenant';
 import { getTenantFollowers } from './line/getTenantFollowers';
 import { receiveBeaconData } from './beacon/receiveBeaconData';
 import { getDeviceWhitelist } from './devices/getDeviceWhitelist';
+import { getServiceUuids } from './uuids/getServiceUuids';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -24,4 +25,5 @@ export {
   getTenantFollowers,
   receiveBeaconData,
   getDeviceWhitelist,
+  getServiceUuids,
 };
