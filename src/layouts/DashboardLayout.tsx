@@ -2,7 +2,7 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { 
   Home, Users, Smartphone, Radio, Bell, 
-  LayoutDashboard, LogOut, Building2, UserCog, UserCircle, TestTube
+  LayoutDashboard, LogOut, Building2, UserCog, UserCircle, TestTube, Tag
 } from 'lucide-react';
 
 export const DashboardLayout = () => {
@@ -26,6 +26,7 @@ export const DashboardLayout = () => {
     { path: '/app-users', icon: UserCircle, label: 'App 用戶' },
     { path: '/elders', icon: Users, label: '長者管理' },
     { path: '/devices', icon: Smartphone, label: '設備管理' },
+    { path: '/uuids', icon: Tag, label: 'UUID 管理' },
     { path: '/gateways', icon: Radio, label: '接收點管理' },
     { path: '/alerts', icon: Bell, label: '警報管理' },
     { path: '/beacon-test', icon: TestTube, label: 'Beacon 測試' },

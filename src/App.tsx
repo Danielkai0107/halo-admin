@@ -8,6 +8,7 @@ import { AppUsersPage } from './pages/AppUsersPage';
 import { EldersPage } from './pages/EldersPage';
 import { ElderDetailPage } from './pages/ElderDetailPage';
 import { DevicesPage } from './pages/DevicesPage';
+import { UUIDsPage } from './pages/UUIDsPage';
 import { GatewaysPage } from './pages/GatewaysPage';
 import { AlertsPage } from './pages/AlertsPage';
 import BeaconTestPage from './pages/BeaconTestPage';
@@ -56,6 +57,7 @@ function App() {
           <Route path="elders" element={<EldersPage />} />
           <Route path="elders/:id" element={<ElderDetailPage />} />
           <Route path="devices" element={<DevicesPage />} />
+          <Route path="uuids" element={<UUIDsPage />} />
           <Route path="gateways" element={<GatewaysPage />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="beacon-test" element={<BeaconTestPage />} />

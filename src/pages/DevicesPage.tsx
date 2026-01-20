@@ -4,7 +4,8 @@ import { useForm } from 'react-hook-form';
 import { deviceService } from '../services/deviceService';
 import { elderService } from '../services/elderService';
 import { tenantService } from '../services/tenantService';
-import type { Device, Elder, Tenant } from '../types';
+import { uuidService } from '../services/uuidService';
+import type { Device, Elder, Tenant, BeaconUUID } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { Modal } from '../components/Modal';
@@ -14,6 +15,7 @@ export const DevicesPage = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [elders, setElders] = useState<Elder[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [uuids, setUuids] = useState<BeaconUUID[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -25,7 +27,18 @@ export const DevicesPage = () => {
   // 批次選擇相關
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm();
+  
+  // 監聽 major 和 minor 的變化，自動更新設備序號
+  const major = watch('major');
+  const minor = watch('minor');
+  
+  useEffect(() => {
+    if (major !== undefined && minor !== undefined && major !== '' && minor !== '') {
+      const deviceSerial = `${major}-${minor}`;
+      setValue('deviceName', deviceSerial);
+    }
+  }, [major, minor, setValue]);
 
   // 計算合併後的設備資料
   const enrichedDevices = useMemo(() => {
@@ -55,12 +68,18 @@ export const DevicesPage = () => {
       setElders(elderData);
     });
 
+    // 訂閱 UUID 列表（只訂閱啟用的）
+    const unsubscribeUuids = uuidService.subscribeActive((uuidData) => {
+      setUuids(uuidData);
+    });
+
     loadTenants();
 
     // 清理訂閱
     return () => {
       unsubscribeDevices();
       unsubscribeElders();
+      unsubscribeUuids();
     };
   }, []);
 
@@ -80,31 +99,13 @@ export const DevicesPage = () => {
   const handleCreate = () => {
     setEditingDevice(null);
     
-    // 生成新的設備序號：d-年份-月份-該月第幾個
-    const now = new Date();
-    const year = String(now.getFullYear()).slice(-2); // 取年份後兩位
-    const month = String(now.getMonth() + 1).padStart(2, '0'); // 月份補零
-    const prefix = `d-${year}-${month}-`;
-    
-    // 找出當月的設備
-    const currentMonthDevices = devices
-      .filter(d => d.deviceName && d.deviceName.startsWith(prefix))
-      .map(d => {
-        const match = d.deviceName!.match(new RegExp(`${prefix}(\\d+)`));
-        return match ? parseInt(match[1], 10) : 0;
-      })
-      .filter(num => !isNaN(num));
-    
-    const nextNumber = currentMonthDevices.length > 0 
-      ? Math.max(...currentMonthDevices) + 1 
-      : 1;
-    
-    const deviceSerial = `${prefix}${String(nextNumber).padStart(4, '0')}`;
-    
+    // 設備序號會根據 Major-Minor 自動生成
     reset({ 
-      deviceName: deviceSerial,
+      deviceName: '',
       type: 'IBEACON',
-      batteryLevel: 100
+      batteryLevel: 100,
+      major: 0,
+      minor: 0
     });
     setShowModal(true);
   };
@@ -112,34 +113,15 @@ export const DevicesPage = () => {
   const handleEdit = (device: Device) => {
     setEditingDevice(device);
     
-    // 如果設備沒有序號或序號不符合新格式，生成新序號
-    let deviceSerial = device.deviceName || '';
-    if (!deviceSerial || !deviceSerial.match(/^d-\d{2}-\d{2}-\d{4}$/)) {
-      const now = new Date();
-      const year = String(now.getFullYear()).slice(-2);
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const prefix = `d-${year}-${month}-`;
-      
-      const currentMonthDevices = devices
-        .filter(d => d.id !== device.id && d.deviceName && d.deviceName.startsWith(prefix))
-        .map(d => {
-          const match = d.deviceName!.match(new RegExp(`${prefix}(\\d+)`));
-          return match ? parseInt(match[1], 10) : 0;
-        })
-        .filter(num => !isNaN(num));
-      
-      const nextNumber = currentMonthDevices.length > 0 
-        ? Math.max(...currentMonthDevices) + 1 
-        : 1;
-      
-      deviceSerial = `${prefix}${String(nextNumber).padStart(4, '0')}`;
-    }
+    // 設備序號根據 Major-Minor 格式顯示
+    const deviceSerial = device.major !== undefined && device.minor !== undefined 
+      ? `${device.major}-${device.minor}` 
+      : device.deviceName || '';
     
     reset({
       deviceName: deviceSerial,
       elderId: device.elderId || '',
       uuid: device.uuid || '',
-      macAddress: device.macAddress || '',
       type: device.type || 'IBEACON',
       batteryLevel: device.batteryLevel || 0,
       major: device.major || 0,
@@ -263,7 +245,7 @@ export const DevicesPage = () => {
         if (data.uuid) {
           const existingDevice: any = await deviceService.getByUuid(data.uuid);
           if (existingDevice.data) {
-            alert(`UUID「${data.uuid}」已存在，請使用不同的 UUID\n\n已存在的設備：${existingDevice.data.deviceName || existingDevice.data.macAddress || '未命名設備'}`);
+            alert(`UUID「${data.uuid}」已存在，請使用不同的 UUID\n\n已存在的設備：${existingDevice.data.deviceName || '未命名設備'}`);
             return;
           }
         }
@@ -333,9 +315,12 @@ export const DevicesPage = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">設備管理</h1>
-          <p className="text-gray-600 mt-1">管理所有 Beacon 設備（UUID 為主要識別碼）</p>
+          <p className="text-gray-600 mt-1">管理所有 Beacon 設備（UUID + Major + Minor 組合識別）</p>
           <p className="text-sm text-blue-600 mt-1">
             💡 工作流程：先登記設備（設備池） → 前往「社區管理」分配到社區 → 再到「長者管理」綁定給長者
+          </p>
+          <p className="text-sm text-orange-600 mt-1">
+            ⭐ 硬體設定：所有卡片建議設定同一個 UUID，用 Major（群組）+ Minor（編號）區分不同設備
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -369,7 +354,7 @@ export const DevicesPage = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="搜尋 MAC Address..."
+            placeholder="搜尋設備名稱、UUID、Major、Minor..."
             className="input pl-10"
           />
         </div>
@@ -390,7 +375,7 @@ export const DevicesPage = () => {
                   />
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">序號</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">UUID（主要識別）</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">設備識別（UUID / Major / Minor）</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">社區</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">長者</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">綁定狀態</th>
@@ -412,16 +397,25 @@ export const DevicesPage = () => {
                   </td>
                   <td className="py-3 px-4 text-sm font-medium">
                     <code className="text-sm font-mono bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                      {device.deviceName || '-'}
+                      {device.major !== undefined && device.minor !== undefined 
+                        ? `${device.major}-${device.minor}` 
+                        : device.deviceName || '-'}
                     </code>
                   </td>
                   <td className="py-3 px-4">
-                    <code className="text-xs font-mono bg-blue-50 text-blue-800 px-2 py-1 rounded block">
-                      {device.uuid || '-'}
-                    </code>
-                    {device.macAddress && (
-                      <div className="text-xs text-gray-500 mt-1">MAC: {device.macAddress}</div>
-                    )}
+                    <div className="space-y-1">
+                      <code className="text-xs font-mono bg-blue-50 text-blue-800 px-2 py-1 rounded block">
+                        UUID: {device.uuid ? device.uuid.substring(0, 8) + '...' : '-'}
+                      </code>
+                      <div className="flex items-center space-x-2">
+                        <code className="text-xs font-mono bg-green-50 text-green-800 px-2 py-1 rounded">
+                          Major: {device.major ?? '-'}
+                        </code>
+                        <code className="text-xs font-mono bg-purple-50 text-purple-800 px-2 py-1 rounded">
+                          Minor: {device.minor ?? '-'}
+                        </code>
+                      </div>
+                    </div>
                   </td>
                   <td className="py-3 px-4 text-sm">
                     {device.tenant?.name || <span className="text-gray-400">-</span>}
@@ -487,15 +481,15 @@ export const DevicesPage = () => {
           <div className="grid grid-cols-2 gap-4">
             {/* 設備序號 - 放在最上方 */}
             <div className="col-span-2">
-              <label className="label">設備序號 *</label>
+              <label className="label">設備序號（自動生成）</label>
               <input 
-                {...register('deviceName', { required: true })} 
-                className="input bg-gray-50" 
-                placeholder="d-26-01-0001" 
+                {...register('deviceName')} 
+                className="input bg-gray-100 text-gray-600" 
+                placeholder="請先輸入 Major 和 Minor" 
                 disabled
+                readOnly
               />
-              {errors.deviceName && <p className="text-sm text-red-600 mt-1">請輸入設備序號</p>}
-              <p className="text-xs text-gray-500 mt-1">💡 系統自動生成：d-年份-月份-該月第幾個</p>
+              <p className="text-xs text-blue-600 mt-1">💡 序號格式：Major-Minor（例如：1-1001）會自動更新</p>
             </div>
 
             {/* 長者選擇 - 只在編輯模式顯示 */}
@@ -515,24 +509,28 @@ export const DevicesPage = () => {
             )}
 
             <div className="col-span-2">
-              <label className="label">UUID * (主要識別碼)</label>
-              <input 
+              <label className="label">UUID * (服務識別碼)</label>
+              <select 
                 {...register('uuid', { required: true })} 
-                className="input" 
-                placeholder="FDA50693-A4E2-4FB1-AFCF-C6EB07647825" 
-              />
-              {errors.uuid && <p className="text-sm text-red-600 mt-1">請輸入 UUID（設備唯一識別碼）</p>}
-              <p className="text-xs text-blue-600 mt-1">⭐ UUID 是設備的主要判定指標，必須唯一</p>
-            </div>
-
-            <div className="col-span-2">
-              <label className="label">MAC Address（輔助識別）</label>
-              <input 
-                {...register('macAddress')} 
-                className="input" 
-                placeholder="AA:BB:CC:DD:EE:FF（選填）" 
-              />
-              <p className="text-xs text-gray-500 mt-1">MAC 地址為輔助識別，非必填</p>
+                className="input"
+              >
+                <option value="">請選擇 UUID</option>
+                {uuids.map((uuid) => (
+                  <option key={uuid.id} value={uuid.uuid}>
+                    {uuid.name} - {uuid.uuid}
+                  </option>
+                ))}
+              </select>
+              {errors.uuid && <p className="text-sm text-red-600 mt-1">請選擇 UUID</p>}
+              {uuids.length === 0 ? (
+                <p className="text-xs text-orange-600 mt-1">
+                  ⚠️ 尚未建立 UUID，請先前往「UUID 管理」新增
+                </p>
+              ) : (
+                <p className="text-xs text-blue-600 mt-1">
+                  💡 若需要新的 UUID，請前往「UUID 管理」新增
+                </p>
+              )}
             </div>
 
             <div>
@@ -550,13 +548,27 @@ export const DevicesPage = () => {
             </div>
 
             <div>
-              <label className="label">Major</label>
-              <input type="number" {...register('major')} className="input" placeholder="100" />
+              <label className="label">Major * (群組編號)</label>
+              <input 
+                type="number" 
+                {...register('major', { required: true, valueAsNumber: true })} 
+                className="input" 
+                placeholder="1" 
+              />
+              {errors.major && <p className="text-sm text-red-600 mt-1">請輸入 Major（群組編號）</p>}
+              <p className="text-xs text-gray-500 mt-1">例如：1 = 大愛社區</p>
             </div>
 
             <div>
-              <label className="label">Minor</label>
-              <input type="number" {...register('minor')} className="input" placeholder="1" />
+              <label className="label">Minor * (設備編號)</label>
+              <input 
+                type="number" 
+                {...register('minor', { required: true, valueAsNumber: true })} 
+                className="input" 
+                placeholder="1001" 
+              />
+              {errors.minor && <p className="text-sm text-red-600 mt-1">請輸入 Minor（設備編號）</p>}
+              <p className="text-xs text-gray-500 mt-1">⭐ Major + Minor 組合才是設備的唯一識別碼</p>
             </div>
           </div>
 
@@ -573,7 +585,7 @@ export const DevicesPage = () => {
         onClose={() => setDeletingDevice(null)}
         onConfirm={handleDelete}
         title="確認刪除"
-        message={`確定要刪除設備「${deletingDevice?.uuid || deletingDevice?.macAddress || deletingDevice?.deviceName}」嗎？此操作無法復原。`}
+        message={`確定要刪除設備「${deletingDevice?.deviceName || deletingDevice?.uuid}」嗎？此操作無法復原。`}
         confirmText="刪除"
         type="danger"
       />

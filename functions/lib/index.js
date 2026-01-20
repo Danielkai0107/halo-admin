@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.receiveBeaconData = exports.getTenantFollowers = exports.verifyUserTenant = exports.lineWebhook = exports.checkInactiveElders = exports.completeAlert = exports.declineAlertAssignment = exports.acceptAlertAssignment = exports.assignAlert = void 0;
+exports.getDeviceWhitelist = exports.receiveBeaconData = exports.getTenantFollowers = exports.verifyUserTenant = exports.lineWebhook = exports.checkInactiveElders = exports.completeAlert = exports.declineAlertAssignment = exports.acceptAlertAssignment = exports.assignAlert = void 0;
 const admin = __importStar(require("firebase-admin"));
 const assignment_1 = require("./alerts/assignment");
 Object.defineProperty(exports, "assignAlert", { enumerable: true, get: function () { return assignment_1.assignAlert; } });
@@ -52,6 +52,8 @@ const getTenantFollowers_1 = require("./line/getTenantFollowers");
 Object.defineProperty(exports, "getTenantFollowers", { enumerable: true, get: function () { return getTenantFollowers_1.getTenantFollowers; } });
 const receiveBeaconData_1 = require("./beacon/receiveBeaconData");
 Object.defineProperty(exports, "receiveBeaconData", { enumerable: true, get: function () { return receiveBeaconData_1.receiveBeaconData; } });
+const getDeviceWhitelist_1 = require("./devices/getDeviceWhitelist");
+Object.defineProperty(exports, "getDeviceWhitelist", { enumerable: true, get: function () { return getDeviceWhitelist_1.getDeviceWhitelist; } });
 // Initialize Firebase Admin
 admin.initializeApp();
 //# sourceMappingURL=index.js.map

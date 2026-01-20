@@ -130,6 +130,33 @@ export const deviceService = {
     }
   },
 
+  // 根據 UUID + Major + Minor 獲取設備（Beacon 主要查詢方式）
+  getByMajorMinor: async (uuid: string, major: number, minor: number) => {
+    try {
+      const devicesQuery = query(
+        collection(db, 'devices'),
+        where('uuid', '==', uuid),
+        where('major', '==', major),
+        where('minor', '==', minor)
+      );
+      
+      const devicesSnap = await getDocs(devicesQuery);
+      if (devicesSnap.empty) {
+        return { data: null };
+      }
+      
+      const device = {
+        id: devicesSnap.docs[0].id,
+        ...devicesSnap.docs[0].data(),
+      };
+
+      return { data: device };
+    } catch (error) {
+      console.error('Failed to get device by UUID/Major/Minor:', error);
+      throw error;
+    }
+  },
+
   // 新增設備（初始登記，不綁定社區和長者）
   create: async (data: Partial<Device>) => {
     try {

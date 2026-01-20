@@ -85,15 +85,28 @@ export const ElderStatus = {
   MOVED_OUT: "MOVED_OUT",
 } as const;
 
+// BeaconUUID (服務識別碼管理)
+export interface BeaconUUID {
+  id: string;
+  uuid: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // Device
 export interface Device {
   id: string;
   tenantId: string | null;
   elderId: string | null;
-  macAddress: string;
-  uuid?: string;
-  major?: number;
-  minor?: number;
+  // ✅ 核心識別欄位（用於 Beacon 識別）
+  uuid: string;           // 必填 - 服務識別碼（所有同公司設備統一）
+  major: number;          // 必填 - 群組編號（例如：社區/區域）
+  minor: number;          // 必填 - 設備編號（每張卡片唯一）
+  // ⚠️ 輔助欄位
+  macAddress?: string;    // 選填 - Beacon MAC 會隨機變化，僅供參考
   deviceName?: string;
   type: DeviceType;
   batteryLevel?: number;

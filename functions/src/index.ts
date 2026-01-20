@@ -7,6 +7,7 @@ import { lineWebhook } from './line/webhook';
 import { verifyUserTenant } from './line/verifyUserTenant';
 import { getTenantFollowers } from './line/getTenantFollowers';
 import { receiveBeaconData } from './beacon/receiveBeaconData';
+import { getDeviceWhitelist } from './devices/getDeviceWhitelist';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -22,4 +23,5 @@ export {
   verifyUserTenant,
   getTenantFollowers,
   receiveBeaconData,
+  getDeviceWhitelist,
 };
