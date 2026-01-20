@@ -168,20 +168,27 @@ async function getOrCreateGateway(gatewayId, payload, db) {
     }
     // Gateway not found, auto-register
     console.log(`Auto-registering new gateway: ${gatewayId}`);
+    // Build gateway data object (only include fields with values, not undefined)
     const newGateway = {
         serialNumber: gatewayId,
-        macAddress: gatewayId.includes(':') ? gatewayId : undefined,
-        imei: !gatewayId.includes(':') && gatewayId.length >= 10 ? gatewayId : undefined,
         name: `Auto-Gateway-${gatewayId.substring(0, 8)}`,
         location: `Auto-registered at ${new Date().toISOString()}`,
         type: 'MOBILE',
         latitude: payload.lat,
         longitude: payload.lng,
-        tenantId: null, // Can be assigned later in backend
+        tenantId: null,
         isActive: true,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
+    // Only add macAddress if it looks like a MAC address
+    if (gatewayId.includes(':')) {
+        newGateway.macAddress = gatewayId;
+    }
+    // Only add imei if it looks like an IMEI or device ID
+    if (!gatewayId.includes(':') && gatewayId.length >= 10) {
+        newGateway.imei = gatewayId;
+    }
     const docRef = await db.collection('gateways').add(newGateway);
     console.log(`Gateway auto-registered with ID: ${docRef.id}`);
     return {
