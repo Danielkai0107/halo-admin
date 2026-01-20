@@ -33,7 +33,7 @@ interface RequestPayload {
 
 interface GatewayInfo {
   id: string;
-  tenantId: string;
+  tenantId: string | null;
   serialNumber: string;
   macAddress?: string;
   imei?: string;
@@ -197,6 +197,61 @@ async function getGatewayInfo(
 }
 
 /**
+ * Get or create gateway (auto-register if not exists)
+ * 
+ * If gateway is not found in database, automatically create a new one.
+ * This allows receivers to upload data without pre-registration.
+ */
+async function getOrCreateGateway(
+  gatewayId: string,
+  payload: RequestPayload,
+  db: admin.firestore.Firestore
+): Promise<GatewayInfo> {
+  // First, try to find existing gateway
+  let gateway = await getGatewayInfo(gatewayId, db);
+  
+  if (gateway) {
+    return gateway;
+  }
+  
+  // Gateway not found, auto-register
+  console.log(`Auto-registering new gateway: ${gatewayId}`);
+  
+  const newGateway = {
+    serialNumber: gatewayId,
+    macAddress: gatewayId.includes(':') ? gatewayId : undefined,
+    imei: !gatewayId.includes(':') && gatewayId.length >= 10 ? gatewayId : undefined,
+    name: `Auto-Gateway-${gatewayId.substring(0, 8)}`,
+    location: `Auto-registered at ${new Date().toISOString()}`,
+    type: 'MOBILE' as const,
+    latitude: payload.lat,
+    longitude: payload.lng,
+    tenantId: null, // Can be assigned later in backend
+    isActive: true,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  
+  const docRef = await db.collection('gateways').add(newGateway);
+  
+  console.log(`Gateway auto-registered with ID: ${docRef.id}`);
+  
+  return {
+    id: docRef.id,
+    serialNumber: newGateway.serialNumber,
+    macAddress: newGateway.macAddress,
+    imei: newGateway.imei,
+    name: newGateway.name,
+    location: newGateway.location,
+    type: newGateway.type,
+    latitude: newGateway.latitude,
+    longitude: newGateway.longitude,
+    tenantId: newGateway.tenantId,
+    isActive: newGateway.isActive,
+  } as GatewayInfo;
+}
+
+/**
  * Determine the location to use based on gateway type
  */
 function determineLocation(gateway: GatewayInfo, uploadedLat: number, uploadedLng: number): { lat: number; lng: number } {
@@ -257,9 +312,17 @@ async function sendLineNotification(
     }
 
     const elder = elderDoc.data();
-    const tenantId = gateway.tenantId;
+    
+    // 3. Get tenantId from elder (not from gateway)
+    const tenantId = elder?.tenantId;
 
-    // 3. Get tenant LINE credentials
+    // Skip notification if elder is not associated with any tenant
+    if (!tenantId) {
+      console.log(`Elder ${elderId} has no associated tenant, skipping notification`);
+      return;
+    }
+
+    // 4. Get tenant LINE credentials
     const tenantDoc = await db.collection('tenants').doc(tenantId).get();
     if (!tenantDoc.exists) {
       console.log(`Tenant ${tenantId} not found`);
@@ -274,7 +337,7 @@ async function sendLineNotification(
       return;
     }
 
-    // 4. Get all approved tenant members
+    // 5. Get all approved tenant members
     const membersQuery = await db
       .collection('tenants').doc(tenantId)
       .collection('members')
@@ -286,7 +349,7 @@ async function sendLineNotification(
       return;
     }
 
-    // 5. Get appUsers with LINE IDs
+    // 6. Get appUsers with LINE IDs
     const memberAppUserIds = membersQuery.docs.map(doc => doc.data().appUserId);
     const lineUserIds: string[] = [];
 
@@ -313,7 +376,7 @@ async function sendLineNotification(
       return;
     }
 
-    // 6. Create LINE client and send message
+    // 7. Create LINE client and send message
     const client = new Client({ channelAccessToken });
 
     const gatewayTypeText = gateway.type === 'BOUNDARY' ? '邊界點' : 
@@ -543,6 +606,14 @@ async function createBoundaryAlert(
     }
 
     const elder = elderDoc.data();
+    
+    // Get tenantId from elder
+    const tenantId = elder?.tenantId;
+    
+    if (!tenantId) {
+      console.log(`Elder ${elderId} has no associated tenant, skipping boundary alert`);
+      return;
+    }
 
     // Check if there's already a recent BOUNDARY alert (within 5 minutes)
     // Simplified query to avoid complex index requirements
@@ -573,7 +644,7 @@ async function createBoundaryAlert(
 
     // Create boundary alert
     await db.collection('alerts').add({
-      tenantId: gateway.tenantId,
+      tenantId: tenantId,
       elderId: elderId,
       gatewayId: gateway.id,
       type: 'BOUNDARY',
@@ -834,28 +905,10 @@ export const receiveBeaconData = onRequest(
 
       const db = admin.firestore();
 
-      // Step 2: Query gateway information
-      const gateway = await getGatewayInfo(payload.gateway_id, db);
+      // Step 2: Get or auto-register gateway
+      const gateway = await getOrCreateGateway(payload.gateway_id, payload, db);
 
-      if (!gateway) {
-        console.warn(`Gateway not found or inactive: ${payload.gateway_id}`);
-        
-        // Log unregistered gateway
-        await logError(
-          'receiveBeaconData',
-          `Unregistered or inactive gateway: ${payload.gateway_id}`,
-          undefined,
-          payload
-        );
-
-        res.status(404).json({
-          success: false,
-          error: `Gateway ${payload.gateway_id} is not registered or inactive. Please register it in the Gateway Management system.`,
-        });
-        return;
-      }
-
-      console.log(`Gateway found: ${gateway.name} (${gateway.type}) - Tenant: ${gateway.tenantId}`);
+      console.log(`Gateway: ${gateway.name} (${gateway.type}) - Tenant: ${gateway.tenantId || 'None'}`);
 
       // Step 3: Batch process all beacons using Promise.all
       const results = await Promise.all(
