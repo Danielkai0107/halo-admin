@@ -325,11 +325,12 @@ export const GatewaysPage = () => {
                   <td className="py-3 px-4">{getTypeBadge(gateway.type)}</td>
                   <td className="py-3 px-4 text-sm text-gray-600">{gateway.location || '-'}</td>
                   <td className="py-3 px-4 text-sm text-gray-600">
-                    {gateway.latitude && gateway.longitude ? (
+                    {gateway.latitude !== undefined && gateway.latitude !== null && 
+                     gateway.longitude !== undefined && gateway.longitude !== null ? (
                       <div className="flex items-center space-x-1">
                         <MapPin className="w-3 h-3 text-gray-400" />
                         <span className="font-mono text-xs">
-                          {gateway.latitude.toFixed(4)}, {gateway.longitude.toFixed(4)}
+                          {Number(gateway.latitude).toFixed(4)}, {Number(gateway.longitude).toFixed(4)}
                         </span>
                       </div>
                     ) : (
