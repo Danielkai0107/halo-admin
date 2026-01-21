@@ -21,6 +21,7 @@ import {
   updateMapUserNotificationPoint 
 } from './mapApp/notificationPoints';
 import { getMapUserActivities } from './mapApp/activities';
+import { getMapUserProfile } from './mapApp/userProfile';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -52,4 +53,5 @@ export {
   getMapUserNotificationPoints,
   updateMapUserNotificationPoint,
   getMapUserActivities,
+  getMapUserProfile,
 };

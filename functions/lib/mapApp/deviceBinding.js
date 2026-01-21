@@ -43,6 +43,8 @@ const https_1 = require("firebase-functions/v2/https");
  * Request Body:
  * - userId: string
  * - deviceId: string
+ * - nickname?: string (設備暱稱)
+ * - age?: number (使用者年齡)
  *
  * Headers:
  * - Authorization: Bearer {FIREBASE_ID_TOKEN}
@@ -136,11 +138,13 @@ exports.bindDeviceToMapUser = (0, https_1.onRequest)(async (req, res) => {
             mapAppUserId: body.userId,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-        // Update user's bound device
+        // Update user's bound device (包含暱稱和年齡)
         const boundAt = admin.firestore.FieldValue.serverTimestamp();
         await db.collection('mapAppUsers').doc(body.userId).update({
             boundDeviceId: body.deviceId,
             boundAt: boundAt,
+            deviceNickname: body.nickname || null,
+            deviceOwnerAge: body.age || null,
             updatedAt: boundAt,
         });
         res.json({
@@ -151,6 +155,8 @@ exports.bindDeviceToMapUser = (0, https_1.onRequest)(async (req, res) => {
                 major: deviceData === null || deviceData === void 0 ? void 0 : deviceData.major,
                 minor: deviceData === null || deviceData === void 0 ? void 0 : deviceData.minor,
                 deviceName: deviceData === null || deviceData === void 0 ? void 0 : deviceData.deviceName,
+                nickname: body.nickname,
+                age: body.age,
             },
             boundAt: new Date().toISOString(),
         });
@@ -236,10 +242,12 @@ exports.unbindDeviceFromMapUser = (0, https_1.onRequest)(async (req, res) => {
             mapAppUserId: null,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-        // Update user
+        // Update user (清空所有綁定相關欄位)
         await db.collection('mapAppUsers').doc(body.userId).update({
             boundDeviceId: null,
             boundAt: null,
+            deviceNickname: null,
+            deviceOwnerAge: null,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         res.json({

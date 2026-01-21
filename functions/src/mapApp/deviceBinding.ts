@@ -4,6 +4,8 @@ import { onRequest } from 'firebase-functions/v2/https';
 interface BindDeviceRequest {
   userId: string;
   deviceId: string;
+  nickname?: string;  // 設備暱稱（不與設備綁死）
+  age?: number;       // 使用者年齡（不與設備綁死）
 }
 
 interface UnbindDeviceRequest {
@@ -17,6 +19,8 @@ interface UnbindDeviceRequest {
  * Request Body:
  * - userId: string
  * - deviceId: string
+ * - nickname?: string (設備暱稱)
+ * - age?: number (使用者年齡)
  * 
  * Headers:
  * - Authorization: Bearer {FIREBASE_ID_TOKEN}
@@ -126,11 +130,13 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // Update user's bound device
+    // Update user's bound device (包含暱稱和年齡)
     const boundAt = admin.firestore.FieldValue.serverTimestamp();
     await db.collection('mapAppUsers').doc(body.userId).update({
       boundDeviceId: body.deviceId,
       boundAt: boundAt,
+      deviceNickname: body.nickname || null,
+      deviceOwnerAge: body.age || null,
       updatedAt: boundAt,
     });
 
@@ -142,6 +148,8 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
         major: deviceData?.major,
         minor: deviceData?.minor,
         deviceName: deviceData?.deviceName,
+        nickname: body.nickname,
+        age: body.age,
       },
       boundAt: new Date().toISOString(),
     });
@@ -240,10 +248,12 @@ export const unbindDeviceFromMapUser = onRequest(async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // Update user
+    // Update user (清空所有綁定相關欄位)
     await db.collection('mapAppUsers').doc(body.userId).update({
       boundDeviceId: null,
       boundAt: null,
+      deviceNickname: null,
+      deviceOwnerAge: null,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 

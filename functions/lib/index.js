@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMapUserActivities = exports.updateMapUserNotificationPoint = exports.getMapUserNotificationPoints = exports.removeMapUserNotificationPoint = exports.addMapUserNotificationPoint = exports.getPublicGateways = exports.unbindDeviceFromMapUser = exports.bindDeviceToMapUser = exports.updateMapUserFcmToken = exports.mapUserAuth = exports.getServiceUuids = exports.getDeviceWhitelist = exports.receiveBeaconData = exports.getTenantFollowers = exports.verifyUserTenant = exports.lineWebhook = exports.checkInactiveElders = exports.completeAlert = exports.declineAlertAssignment = exports.acceptAlertAssignment = exports.assignAlert = void 0;
+exports.getMapUserProfile = exports.getMapUserActivities = exports.updateMapUserNotificationPoint = exports.getMapUserNotificationPoints = exports.removeMapUserNotificationPoint = exports.addMapUserNotificationPoint = exports.getPublicGateways = exports.unbindDeviceFromMapUser = exports.bindDeviceToMapUser = exports.updateMapUserFcmToken = exports.mapUserAuth = exports.getServiceUuids = exports.getDeviceWhitelist = exports.receiveBeaconData = exports.getTenantFollowers = exports.verifyUserTenant = exports.lineWebhook = exports.checkInactiveElders = exports.completeAlert = exports.declineAlertAssignment = exports.acceptAlertAssignment = exports.assignAlert = void 0;
 const admin = __importStar(require("firebase-admin"));
 const assignment_1 = require("./alerts/assignment");
 Object.defineProperty(exports, "assignAlert", { enumerable: true, get: function () { return assignment_1.assignAlert; } });
@@ -73,6 +73,8 @@ Object.defineProperty(exports, "getMapUserNotificationPoints", { enumerable: tru
 Object.defineProperty(exports, "updateMapUserNotificationPoint", { enumerable: true, get: function () { return notificationPoints_1.updateMapUserNotificationPoint; } });
 const activities_1 = require("./mapApp/activities");
 Object.defineProperty(exports, "getMapUserActivities", { enumerable: true, get: function () { return activities_1.getMapUserActivities; } });
+const userProfile_1 = require("./mapApp/userProfile");
+Object.defineProperty(exports, "getMapUserProfile", { enumerable: true, get: function () { return userProfile_1.getMapUserProfile; } });
 // Initialize Firebase Admin
 admin.initializeApp();
 //# sourceMappingURL=index.js.map

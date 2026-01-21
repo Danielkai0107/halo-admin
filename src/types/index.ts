@@ -258,6 +258,8 @@ export interface MapAppUser {
   avatar?: string;
   boundDeviceId?: string;
   boundAt?: string;
+  deviceNickname?: string;  // 設備暱稱（不與設備綁死）
+  deviceOwnerAge?: number;   // 使用者年齡（不與設備綁死）
   fcmToken?: string;
   notificationEnabled: boolean;
   isActive: boolean;
