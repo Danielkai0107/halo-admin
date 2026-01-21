@@ -240,6 +240,8 @@ const idToken = await user.getIdToken();
 **端點:** `POST /addMapUserNotificationPoint`  
 **認證:** 必需
 
+**說明:** 用戶可以選擇任何接收點（不限公共或社區專用）作為通知點位。當用戶的設備經過該接收點時，會發送 FCM 推播通知。
+
 **請求 Body:**
 ```json
 {

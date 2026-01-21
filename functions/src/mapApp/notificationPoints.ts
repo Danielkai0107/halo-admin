@@ -80,21 +80,14 @@ export const addMapUserNotificationPoint = onRequest(async (req, res) => {
       return;
     }
 
-    // Verify gateway exists and is public
+    // Verify gateway exists (allow both public and tenant gateways)
     const gatewayDoc = await db.collection('gateways').doc(body.gatewayId).get();
     if (!gatewayDoc.exists) {
       res.status(404).json({ success: false, error: 'Gateway not found' });
       return;
     }
-
-    const gatewayData = gatewayDoc.data();
-    if (gatewayData?.poolType !== 'PUBLIC') {
-      res.status(400).json({ 
-        success: false, 
-        error: 'Gateway is not in public pool' 
-      });
-      return;
-    }
+    
+    // No need to check poolType - all gateways can be used for notifications
 
     // Create notification point
     const notificationPoint = {
