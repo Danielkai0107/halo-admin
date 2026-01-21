@@ -21,6 +21,7 @@ interface BeaconData {
   major: number;
   minor: number;
   rssi: number;
+  batteryLevel?: number;  // Optional battery level (0-100)
 }
 
 interface RequestPayload {
@@ -145,6 +146,15 @@ function validatePayload(body: any): { valid: boolean; error?: string } {
     body.beacons[i].major = major;
     body.beacons[i].minor = minor;
     body.beacons[i].rssi = rssi;
+    
+    // Validate and normalize batteryLevel if provided (optional)
+    if (beacon.batteryLevel !== undefined && beacon.batteryLevel !== null) {
+      const batteryLevel = Number(beacon.batteryLevel);
+      if (isNaN(batteryLevel) || batteryLevel < 0 || batteryLevel > 100) {
+        return { valid: false, error: `Beacon at index ${i} has invalid batteryLevel (must be 0-100, got: ${beacon.batteryLevel})` };
+      }
+      body.beacons[i].batteryLevel = batteryLevel;
+    }
   }
 
   return { valid: true };
@@ -740,6 +750,21 @@ async function processBeacon(
     const deviceDoc = deviceQuery.docs[0];
     const device = deviceDoc.data();
     const deviceId = deviceDoc.id;
+
+    // 🆕 Update device battery level and lastSeen if battery info is provided
+    const deviceUpdateData: any = {
+      lastSeen: new Date(timestamp).toISOString(),
+      lastRssi: beacon.rssi,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    
+    // Only update batteryLevel if it's provided in the beacon data
+    if (beacon.batteryLevel !== undefined && beacon.batteryLevel !== null) {
+      deviceUpdateData.batteryLevel = beacon.batteryLevel;
+    }
+    
+    await deviceDoc.ref.update(deviceUpdateData);
+    console.log(`Updated device ${deviceId} - batteryLevel: ${beacon.batteryLevel ?? 'N/A'}, lastSeen: ${new Date(timestamp).toISOString()}`);
 
     // 🆕 Check if this is a map app user device
     if (device.poolType === 'PUBLIC' && device.mapAppUserId) {

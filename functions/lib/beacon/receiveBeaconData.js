@@ -115,6 +115,14 @@ function validatePayload(body) {
         body.beacons[i].major = major;
         body.beacons[i].minor = minor;
         body.beacons[i].rssi = rssi;
+        // Validate and normalize batteryLevel if provided (optional)
+        if (beacon.batteryLevel !== undefined && beacon.batteryLevel !== null) {
+            const batteryLevel = Number(beacon.batteryLevel);
+            if (isNaN(batteryLevel) || batteryLevel < 0 || batteryLevel > 100) {
+                return { valid: false, error: `Beacon at index ${i} has invalid batteryLevel (must be 0-100, got: ${beacon.batteryLevel})` };
+            }
+            body.beacons[i].batteryLevel = batteryLevel;
+        }
     }
     return { valid: true };
 }
@@ -601,6 +609,7 @@ async function createBoundaryAlert(beacon, gateway, lat, lng, db) {
  * Process a single beacon with 5-minute cooldown logic
  */
 async function processBeacon(beacon, gateway, uploadedLat, uploadedLng, timestamp, db) {
+    var _a;
     // Determine the location to use based on gateway type
     const { lat, lng } = determineLocation(gateway, uploadedLat, uploadedLng);
     try {
@@ -620,6 +629,18 @@ async function processBeacon(beacon, gateway, uploadedLat, uploadedLng, timestam
         const deviceDoc = deviceQuery.docs[0];
         const device = deviceDoc.data();
         const deviceId = deviceDoc.id;
+        // 🆕 Update device battery level and lastSeen if battery info is provided
+        const deviceUpdateData = {
+            lastSeen: new Date(timestamp).toISOString(),
+            lastRssi: beacon.rssi,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        // Only update batteryLevel if it's provided in the beacon data
+        if (beacon.batteryLevel !== undefined && beacon.batteryLevel !== null) {
+            deviceUpdateData.batteryLevel = beacon.batteryLevel;
+        }
+        await deviceDoc.ref.update(deviceUpdateData);
+        console.log(`Updated device ${deviceId} - batteryLevel: ${(_a = beacon.batteryLevel) !== null && _a !== void 0 ? _a : 'N/A'}, lastSeen: ${new Date(timestamp).toISOString()}`);
         // 🆕 Check if this is a map app user device
         if (device.poolType === 'PUBLIC' && device.mapAppUserId) {
             console.log(`Processing beacon for map app user ${device.mapAppUserId}`);
