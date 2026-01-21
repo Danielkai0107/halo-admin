@@ -21,6 +21,7 @@ interface BeaconData {
   major: number;
   minor: number;
   rssi: number;
+  batteryLevel?: number;  // Optional battery level (0-100)
 }
 
 interface RequestPayload {
@@ -145,6 +146,15 @@ function validatePayload(body: any): { valid: boolean; error?: string } {
     body.beacons[i].major = major;
     body.beacons[i].minor = minor;
     body.beacons[i].rssi = rssi;
+    
+    // Validate and normalize batteryLevel if provided (optional)
+    if (beacon.batteryLevel !== undefined && beacon.batteryLevel !== null) {
+      const batteryLevel = Number(beacon.batteryLevel);
+      if (isNaN(batteryLevel) || batteryLevel < 0 || batteryLevel > 100) {
+        return { valid: false, error: `Beacon at index ${i} has invalid batteryLevel (must be 0-100, got: ${beacon.batteryLevel})` };
+      }
+      body.beacons[i].batteryLevel = batteryLevel;
+    }
   }
 
   return { valid: true };
@@ -722,7 +732,7 @@ async function processBeacon(
   const { lat, lng } = determineLocation(gateway, uploadedLat, uploadedLng);
 
   try {
-    // 1. Find device by UUID + Major + Minor (unique identifier for Beacon) to get the associated elder
+    // 1. Find device by UUID + Major + Minor (unique identifier for Beacon)
     const deviceQuery = await db
       .collection('devices')
       .where('uuid', '==', beacon.uuid)
@@ -733,15 +743,50 @@ async function processBeacon(
       .get();
 
     if (deviceQuery.empty) {
-      console.log(`No active device found for UUID ${beacon.uuid}, Major ${beacon.major}, Minor ${beacon.minor}, skipping location update`);
+      console.log(`No active device found for UUID ${beacon.uuid}, Major ${beacon.major}, Minor ${beacon.minor}, skipping`);
       return { status: 'ignored', beaconId: `${beacon.uuid}-${beacon.major}-${beacon.minor}` };
     }
 
-    const device = deviceQuery.docs[0].data();
+    const deviceDoc = deviceQuery.docs[0];
+    const device = deviceDoc.data();
+    const deviceId = deviceDoc.id;
+
+    // 🆕 Update device battery level and lastSeen if battery info is provided
+    const deviceUpdateData: any = {
+      lastSeen: new Date(timestamp).toISOString(),
+      lastRssi: beacon.rssi,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    
+    // Only update batteryLevel if it's provided in the beacon data
+    if (beacon.batteryLevel !== undefined && beacon.batteryLevel !== null) {
+      deviceUpdateData.batteryLevel = beacon.batteryLevel;
+    }
+    
+    await deviceDoc.ref.update(deviceUpdateData);
+    console.log(`Updated device ${deviceId} - batteryLevel: ${beacon.batteryLevel ?? 'N/A'}, lastSeen: ${new Date(timestamp).toISOString()}`);
+
+    // 🆕 Check if this is a map app user device
+    if (device.poolType === 'PUBLIC' && device.mapAppUserId) {
+      console.log(`Processing beacon for map app user ${device.mapAppUserId}`);
+      await handleMapUserBeacon(
+        beacon,
+        gateway,
+        deviceId,
+        device.mapAppUserId,
+        lat,
+        lng,
+        timestamp,
+        db
+      );
+      return { status: 'updated', beaconId: deviceId };
+    }
+
+    // Original logic: Handle tenant-elder system
     const elderId = device.elderId;
 
     if (!elderId) {
-      console.log(`Device (UUID: ${beacon.uuid}, Major: ${beacon.major}, Minor: ${beacon.minor}) has no associated elder, skipping location update`);
+      console.log(`Device (UUID: ${beacon.uuid}, Major: ${beacon.major}, Minor: ${beacon.minor}) has no associated elder or map user, skipping`);
       return { status: 'ignored', beaconId: `${beacon.uuid}-${beacon.major}-${beacon.minor}` };
     }
 
@@ -893,6 +938,120 @@ async function processBeacon(
   } catch (error) {
     console.error(`Error processing beacon ${beacon.uuid}:`, error);
     throw error;
+  }
+}
+
+/**
+ * Handle Map App User Beacon Detection
+ * Process beacon data for map app users (not tenant-elder system)
+ */
+async function handleMapUserBeacon(
+  beacon: BeaconData,
+  gateway: GatewayInfo,
+  deviceId: string,
+  mapAppUserId: string,
+  lat: number,
+  lng: number,
+  timestamp: number,
+  db: admin.firestore.Firestore
+): Promise<void> {
+  try {
+    // 1. Record activity to mapUserActivities
+    const activityData = {
+      mapAppUserId: mapAppUserId,
+      deviceId: deviceId,
+      gatewayId: gateway.id,
+      timestamp: admin.firestore.Timestamp.fromMillis(timestamp),
+      rssi: beacon.rssi,
+      latitude: lat,
+      longitude: lng,
+      triggeredNotification: false,
+      notificationPointId: null,
+    };
+
+    const activityRef = await db.collection('mapUserActivities').add(activityData);
+
+    console.log(`Recorded map user activity: ${activityRef.id} for user ${mapAppUserId}`);
+
+    // 2. Check if user has notification points at this gateway
+    const notifPointsSnapshot = await db
+      .collection('mapUserNotificationPoints')
+      .where('mapAppUserId', '==', mapAppUserId)
+      .where('gatewayId', '==', gateway.id)
+      .where('isActive', '==', true)
+      .limit(1)
+      .get();
+
+    if (notifPointsSnapshot.empty) {
+      console.log(`No notification points for user ${mapAppUserId} at gateway ${gateway.id}`);
+      return;
+    }
+
+    const notifPoint = notifPointsSnapshot.docs[0];
+    const notifPointData = notifPoint.data();
+
+    // 3. Get user FCM token
+    const userDoc = await db.collection('mapAppUsers').doc(mapAppUserId).get();
+    if (!userDoc.exists) {
+      console.log(`Map user ${mapAppUserId} not found`);
+      return;
+    }
+
+    const userData = userDoc.data();
+
+    // 4. Send FCM notification if enabled
+    if (userData?.fcmToken && userData?.notificationEnabled) {
+      try {
+        const notificationMessage = notifPointData.notificationMessage || 
+          `您的設備已經過 ${notifPointData.name}`;
+
+        await admin.messaging().send({
+          token: userData.fcmToken,
+          notification: {
+            title: '位置通知',
+            body: notificationMessage,
+          },
+          data: {
+            type: 'LOCATION_ALERT',
+            gatewayId: gateway.id,
+            gatewayName: gateway.name || '',
+            notificationPointId: notifPoint.id,
+            latitude: lat.toString(),
+            longitude: lng.toString(),
+          },
+          android: {
+            priority: 'high',
+            notification: {
+              sound: 'default',
+              channelId: 'location_alerts',
+            },
+          },
+          apns: {
+            payload: {
+              aps: {
+                sound: 'default',
+                badge: 1,
+              },
+            },
+          },
+        });
+
+        // Update activity record to mark notification sent
+        await activityRef.update({
+          triggeredNotification: true,
+          notificationPointId: notifPoint.id,
+        });
+
+        console.log(`Sent FCM notification to map user ${mapAppUserId} for point ${notifPointData.name}`);
+      } catch (fcmError) {
+        console.error(`Failed to send FCM notification to user ${mapAppUserId}:`, fcmError);
+      }
+    } else {
+      console.log(`User ${mapAppUserId} has notifications disabled or no FCM token`);
+    }
+
+  } catch (error) {
+    console.error(`Error in handleMapUserBeacon for user ${mapAppUserId}:`, error);
   }
 }
 
