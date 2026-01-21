@@ -285,7 +285,7 @@ async function sendLineNotification(beacon, gateway, lat, lng, timestamp, db, is
         }
         // 3.5. Get latest location to get accurate last_seen time
         const latestLocationDoc = await db.collection('latest_locations').doc(elderId).get();
-        let lastSeenTime = new Date(timestamp).toLocaleString('zh-TW'); // fallback to timestamp
+        let lastSeenTime = new Date(timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }); // fallback to timestamp
         if (latestLocationDoc.exists) {
             const locationData = latestLocationDoc.data();
             if (locationData === null || locationData === void 0 ? void 0 : locationData.last_seen) {
@@ -293,7 +293,7 @@ async function sendLineNotification(beacon, gateway, lat, lng, timestamp, db, is
                 const lastSeenTimestamp = locationData.last_seen.toMillis ?
                     locationData.last_seen.toMillis() :
                     new Date(locationData.last_seen).getTime();
-                lastSeenTime = new Date(lastSeenTimestamp).toLocaleString('zh-TW');
+                lastSeenTime = new Date(lastSeenTimestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
             }
         }
         // 4. Get tenant LINE credentials

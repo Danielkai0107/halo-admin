@@ -368,7 +368,7 @@ async function sendLineNotification(
 
     // 3.5. Get latest location to get accurate last_seen time
     const latestLocationDoc = await db.collection('latest_locations').doc(elderId).get();
-    let lastSeenTime = new Date(timestamp).toLocaleString('zh-TW'); // fallback to timestamp
+    let lastSeenTime = new Date(timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }); // fallback to timestamp
     
     if (latestLocationDoc.exists) {
       const locationData = latestLocationDoc.data();
@@ -377,7 +377,7 @@ async function sendLineNotification(
         const lastSeenTimestamp = locationData.last_seen.toMillis ? 
           locationData.last_seen.toMillis() : 
           new Date(locationData.last_seen).getTime();
-        lastSeenTime = new Date(lastSeenTimestamp).toLocaleString('zh-TW');
+        lastSeenTime = new Date(lastSeenTimestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
       }
     }
 
