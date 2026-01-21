@@ -39,7 +39,7 @@ const https_1 = require("firebase-functions/v2/https");
 const params_1 = require("firebase-functions/params");
 const bot_sdk_1 = require("@line/bot-sdk");
 // Constants
-const COOLDOWN_PERIOD_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+const COOLDOWN_PERIOD_MS = 2 * 60 * 1000; // 5 minutes in milliseconds
 // Define environment parameter for location update notification
 const enableLocationNotification = (0, params_1.defineString)('ENABLE_LOCATION_UPDATE_NOTIFICATION', {
     default: 'false',
