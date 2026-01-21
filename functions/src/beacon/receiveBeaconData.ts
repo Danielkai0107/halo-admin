@@ -320,6 +320,7 @@ async function sendLineNotification(
   gateway: GatewayInfo,
   lat: number,
   lng: number,
+  timestamp: number,
   db: admin.firestore.Firestore,
   isFirstActivity: boolean = false
 ): Promise<void> {
@@ -561,7 +562,7 @@ async function sendLineNotification(
                     },
                     {
                       type: 'text',
-                      text: new Date().toLocaleString('zh-TW'),
+                      text: new Date(timestamp).toLocaleString('zh-TW'),
                       size: 'sm',
                       color: '#111111',
                       flex: 5,
@@ -842,7 +843,7 @@ async function processBeacon(
       }
 
       // Send LINE notification to members (first activity of the day)
-      await sendLineNotification(beacon, gateway, lat, lng, db, true);
+      await sendLineNotification(beacon, gateway, lat, lng, timestamp, db, true);
 
       return { status: 'created', beaconId: docId };
     }
@@ -878,7 +879,7 @@ async function processBeacon(
       }
 
       // Send LINE notification to members
-      await sendLineNotification(beacon, gateway, lat, lng, db, false);
+      await sendLineNotification(beacon, gateway, lat, lng, timestamp, db, false);
 
       return { status: 'updated', beaconId: docId };
     }
@@ -926,7 +927,7 @@ async function processBeacon(
       }
 
       // Send LINE notification to members (subsequent location update)
-      await sendLineNotification(beacon, gateway, lat, lng, db, false);
+      await sendLineNotification(beacon, gateway, lat, lng, timestamp, db, false);
 
       return { status: 'updated', beaconId: docId };
     }

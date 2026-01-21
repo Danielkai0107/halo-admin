@@ -248,7 +248,7 @@ function determineLocation(gateway, uploadedLat, uploadedLng) {
 /**
  * Send LINE notification to all tenant members
  */
-async function sendLineNotification(beacon, gateway, lat, lng, db, isFirstActivity = false) {
+async function sendLineNotification(beacon, gateway, lat, lng, timestamp, db, isFirstActivity = false) {
     try {
         // 1. Find device by UUID + Major + Minor (unique identifier for Beacon)
         const deviceQuery = await db
@@ -468,7 +468,7 @@ async function sendLineNotification(beacon, gateway, lat, lng, db, isFirstActivi
                                         },
                                         {
                                             type: 'text',
-                                            text: new Date().toLocaleString('zh-TW'),
+                                            text: new Date(timestamp).toLocaleString('zh-TW'),
                                             size: 'sm',
                                             color: '#111111',
                                             flex: 5,
@@ -698,7 +698,7 @@ async function processBeacon(beacon, gateway, uploadedLat, uploadedLng, timestam
                 await createBoundaryAlert(beacon, gateway, lat, lng, db);
             }
             // Send LINE notification to members (first activity of the day)
-            await sendLineNotification(beacon, gateway, lat, lng, db, true);
+            await sendLineNotification(beacon, gateway, lat, lng, timestamp, db, true);
             return { status: 'created', beaconId: docId };
         }
         // Document exists, check cooldown period
@@ -728,7 +728,7 @@ async function processBeacon(beacon, gateway, uploadedLat, uploadedLng, timestam
                 await createBoundaryAlert(beacon, gateway, lat, lng, db);
             }
             // Send LINE notification to members
-            await sendLineNotification(beacon, gateway, lat, lng, db, false);
+            await sendLineNotification(beacon, gateway, lat, lng, timestamp, db, false);
             return { status: 'updated', beaconId: docId };
         }
         // Calculate time difference
@@ -767,7 +767,7 @@ async function processBeacon(beacon, gateway, uploadedLat, uploadedLng, timestam
                 await createBoundaryAlert(beacon, gateway, lat, lng, db);
             }
             // Send LINE notification to members (subsequent location update)
-            await sendLineNotification(beacon, gateway, lat, lng, db, false);
+            await sendLineNotification(beacon, gateway, lat, lng, timestamp, db, false);
             return { status: 'updated', beaconId: docId };
         }
         // Within cooldown period at same gateway, ignore
