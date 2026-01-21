@@ -112,9 +112,17 @@ const idToken = await user.getIdToken();
 ```json
 {
   "userId": "firebase_uid_123",
-  "deviceId": "device_abc123"
+  "deviceId": "device_abc123",
+  "nickname": "媽媽的手環",
+  "age": 65
 }
 ```
+
+**欄位說明:**
+- `userId` (必需): 用戶 ID
+- `deviceId` (必需): 設備 ID
+- `nickname` (選填): 設備暱稱（儲存在用戶資料，不與設備綁死）
+- `age` (選填): 使用者年齡（儲存在用戶資料，不與設備綁死）
 
 **回應:**
 ```json
@@ -125,7 +133,9 @@ const idToken = await user.getIdToken();
     "uuid": "E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
     "major": 1,
     "minor": 1001,
-    "deviceName": "1-1001"
+    "deviceName": "1-1001",
+    "nickname": "媽媽的手環",
+    "age": 65
   },
   "boundAt": "2026-01-21T10:30:00Z"
 }
@@ -135,6 +145,8 @@ const idToken = await user.getIdToken();
 - 設備必須標記為 `poolType: "PUBLIC"`
 - 每個用戶只能綁定一個設備
 - 綁定新設備會自動解綁舊設備
+- 暱稱和年齡存在用戶資料中，不會影響設備本身
+- 解綁設備時會同時清空暱稱和年齡
 
 ---
 
@@ -378,6 +390,77 @@ GET /getMapUserActivities?userId=firebase_uid_123&startTime=1737360000000&endTim
 
 ---
 
+### 7. 用戶資料查詢
+
+#### `getMapUserProfile` - 取得用戶完整資料
+
+**端點:** `GET /getMapUserProfile?userId={userId}`  
+**認證:** 必需
+
+**用途:** 取得用戶完整資料，包含基本資訊、綁定設備、通知點位列表（用於個人資料頁）
+
+**Query 參數:**
+- `userId` (必需): 用戶 ID
+
+**範例:**
+```
+GET /getMapUserProfile?userId=firebase_uid_123
+```
+
+**回應:**
+```json
+{
+  "success": true,
+  "user": {
+    "id": "firebase_uid_123",
+    "email": "user@example.com",
+    "name": "張三",
+    "phone": "0912345678",
+    "avatar": "https://...",
+    "notificationEnabled": true
+  },
+  "boundDevice": {
+    "id": "device_abc123",
+    "deviceName": "1-1001",
+    "nickname": "媽媽的手環",
+    "age": 65,
+    "uuid": "E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
+    "major": 1,
+    "minor": 1001,
+    "boundAt": "2026-01-21T10:30:00Z"
+  },
+  "notificationPoints": [
+    {
+      "id": "point_xyz123",
+      "name": "我的家",
+      "gatewayId": "gateway_001",
+      "notificationMessage": "已到達家門口",
+      "isActive": true,
+      "createdAt": "2026-01-21T09:00:00Z",
+      "gateway": {
+        "name": "台北車站東門",
+        "location": "台北車站",
+        "latitude": 25.047908,
+        "longitude": 121.517315
+      }
+    }
+  ],
+  "timestamp": 1737446400000
+}
+```
+
+**回應欄位說明:**
+- `user`: 用戶基本資訊
+- `boundDevice`: 綁定的設備詳情（如果有綁定），包含暱稱和年齡
+- `notificationPoints`: 通知點位列表，每個點位包含對應的 Gateway 資訊
+
+**注意事項:**
+- 如果用戶沒有綁定設備，`boundDevice` 為 `null`
+- 只回傳 `isActive: true` 的通知點位
+- 用戶只能查詢自己的資料
+
+---
+
 ## 🔄 完整使用流程
 
 ### 1. 用戶註冊/登入
@@ -422,7 +505,7 @@ await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/updateMapUserFcm
 
 ### 3. 綁定設備
 ```javascript
-// 用戶輸入設備 ID 後綁定
+// 用戶輸入設備 ID、暱稱、年齡後綁定
 await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/bindDeviceToMapUser', {
   method: 'POST',
   headers: {
@@ -431,7 +514,9 @@ await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/bindDeviceToMapU
   },
   body: JSON.stringify({
     userId: firebase.auth().currentUser.uid,
-    deviceId: 'device_abc123'
+    deviceId: 'device_abc123',
+    nickname: '媽媽的手環',  // 選填：設備暱稱
+    age: 65                   // 選填：使用者年齡
   })
 });
 ```
@@ -470,6 +555,24 @@ const activities = await fetch(
     }
   }
 ).then(res => res.json());
+```
+
+### 6. 載入用戶資料頁
+```javascript
+// 取得用戶完整資料（用於個人資料頁）
+const userId = firebase.auth().currentUser.uid;
+const profile = await fetch(
+  `https://us-central1-safe-net-tw.cloudfunctions.net/getMapUserProfile?userId=${userId}`,
+  {
+    headers: {
+      'Authorization': `Bearer ${idToken}`
+    }
+  }
+).then(res => res.json());
+
+// profile.user - 用戶基本資訊
+// profile.boundDevice - 綁定的設備（含暱稱、年齡）
+// profile.notificationPoints - 通知點位列表
 ```
 
 ---
@@ -533,6 +636,7 @@ const activities = await fetch(
 | 更新通知點位 | updateMapUserNotificationPoint | PUT | 必需 |
 | 刪除通知點位 | removeMapUserNotificationPoint | DELETE/POST | 必需 |
 | 取得活動記錄 | getMapUserActivities | GET | 必需 |
+| 取得用戶完整資料 | getMapUserProfile | GET | 必需 |
 
 ---
 
