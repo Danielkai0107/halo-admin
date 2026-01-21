@@ -6,7 +6,20 @@
 
 **Firebase 專案:** safe-net-tw  
 **Region:** us-central1  
-**基礎 URL:** `https://us-central1-safe-net-tw.cloudfunctions.net`
+**基礎 URL:** `https://[function-name]-kmzfyt3t5a-uc.a.run.app` (2nd Gen Functions)
+
+**完整 URL 列表:**
+- mapUserAuth: `https://mapuserauth-kmzfyt3t5a-uc.a.run.app`
+- updateMapUserFcmToken: `https://updatemapuserfcmtoken-kmzfyt3t5a-uc.a.run.app`
+- bindDeviceToMapUser: `https://binddevicetomapuser-kmzfyt3t5a-uc.a.run.app`
+- unbindDeviceFromMapUser: `https://unbinddevicefrommapuser-kmzfyt3t5a-uc.a.run.app`
+- getPublicGateways: `https://getpublicgateways-kmzfyt3t5a-uc.a.run.app`
+- addMapUserNotificationPoint: `https://addmapusernotificationpoint-kmzfyt3t5a-uc.a.run.app`
+- getMapUserNotificationPoints: `https://getmapusernotificationpoints-kmzfyt3t5a-uc.a.run.app`
+- updateMapUserNotificationPoint: `https://updatemapusernotificationpoint-kmzfyt3t5a-uc.a.run.app`
+- removeMapUserNotificationPoint: `https://removemapusernotificationpoint-kmzfyt3t5a-uc.a.run.app`
+- getMapUserActivities: `https://getmapuseractivities-kmzfyt3t5a-uc.a.run.app`
+- getMapUserProfile: `https://getmapuserprofile-kmzfyt3t5a-uc.a.run.app`
 
 ---
 
@@ -470,7 +483,7 @@ const userCredential = await firebase.auth().signInWithEmailAndPassword(email, p
 const idToken = await userCredential.user.getIdToken();
 
 // 註冊到地圖 APP 系統
-const response = await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/mapUserAuth', {
+const response = await fetch('https://mapuserauth-kmzfyt3t5a-uc.a.run.app', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -490,7 +503,7 @@ const response = await fetch('https://us-central1-safe-net-tw.cloudfunctions.net
 const fcmToken = await firebase.messaging().getToken();
 
 // 更新到後端
-await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/updateMapUserFcmToken', {
+await fetch('https://updatemapuserfcmtoken-kmzfyt3t5a-uc.a.run.app', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -506,7 +519,7 @@ await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/updateMapUserFcm
 ### 3. 綁定設備
 ```javascript
 // 用戶輸入設備 ID、暱稱、年齡後綁定
-await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/bindDeviceToMapUser', {
+await fetch('https://binddevicetomapuser-kmzfyt3t5a-uc.a.run.app', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -524,11 +537,11 @@ await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/bindDeviceToMapU
 ### 4. 取得公共接收點並選擇通知點位
 ```javascript
 // 取得所有接收點（包括社區的點，形成完整的安全網）
-const gateways = await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/getPublicGateways')
+const gateways = await fetch('https://getpublicgateways-kmzfyt3t5a-uc.a.run.app')
   .then(res => res.json());
 
 // 用戶選擇後新增通知點位
-await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/addMapUserNotificationPoint', {
+await fetch('https://addmapusernotificationpoint-kmzfyt3t5a-uc.a.run.app', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -548,7 +561,7 @@ await fetch('https://us-central1-safe-net-tw.cloudfunctions.net/addMapUserNotifi
 // 取得最近 24 小時的活動
 const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
 const activities = await fetch(
-  `https://us-central1-safe-net-tw.cloudfunctions.net/getMapUserActivities?userId=${userId}&startTime=${oneDayAgo}&limit=100`,
+  `https://getmapuseractivities-kmzfyt3t5a-uc.a.run.app?userId=${userId}&startTime=${oneDayAgo}&limit=100`,
   {
     headers: {
       'Authorization': `Bearer ${idToken}`
@@ -562,7 +575,7 @@ const activities = await fetch(
 // 取得用戶完整資料（用於個人資料頁）
 const userId = firebase.auth().currentUser.uid;
 const profile = await fetch(
-  `https://us-central1-safe-net-tw.cloudfunctions.net/getMapUserProfile?userId=${userId}`,
+  `https://getmapuserprofile-kmzfyt3t5a-uc.a.run.app?userId=${userId}`,
   {
     headers: {
       'Authorization': `Bearer ${idToken}`
