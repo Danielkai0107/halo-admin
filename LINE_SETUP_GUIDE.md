@@ -1,6 +1,6 @@
 # LINE Developers Console 完整設定指南
 
-## 📱 第一步：創建 LINE Official Account（如已有可跳過）
+## 第一步：創建 LINE Official Account（如已有可跳過）
 
 1. 前往 https://manager.line.biz/
 2. 創建新的 Official Account
@@ -27,40 +27,49 @@
 2. **填寫 LIFF 設定**：
 
    **LIFF app name（必填）**
+
    ```
    [您的社區名稱] 長者照護系統
    例如：大愛社區 長者照護系統
    ```
 
    **Size（必填）**
+
    ```
    選擇：Full
    ```
+
    ✅ 這樣 LIFF 會佔滿整個畫面
 
    **Endpoint URL（必填）**
+
    ```
    https://safe-net-tw.web.app/liff
    ```
+
    ⚠️ 注意：末尾沒有斜線 `/`
 
    **Scope（必填，請全部勾選）**
    - ☑️ `profile` - 取得用戶的顯示名稱、頭像等
    - ☑️ `openid` - OpenID Connect 身份驗證
    - ☑️ `email` - 取得用戶的 email（如果有）
-   
+
    **Bot link feature（選填）**
+
    ```
    選擇：On (Aggressive) 或 On (Normal)
    ```
+
    這樣可以讓用戶加入您的 OA 好友
 
    **Scan QR（選填）**
+
    ```
    不用勾選
    ```
 
    **Module mode（選填）**
+
    ```
    不用勾選
    ```
@@ -107,13 +116,13 @@
    ```
    LINE LIFF ID: 2008889284-MuPboxSM
    （從第三步複製）
-   
+
    LIFF Endpoint URL: https://safe-net-tw.web.app/liff
    （固定值）
-   
+
    Channel Access Token: eyJhbGciOiJIUzI1NiJ9...
    （從第四步複製，很長的字串）
-   
+
    Channel Secret: abc123def456...
    （從第五步複製）
    ```
@@ -190,25 +199,33 @@
 ## ❌ 如果還是失敗，請檢查
 
 ### 常見問題 1：LIFF ID 錯誤
+
 **錯誤訊息**：LIFF initialization failed
 **解決方法**：
+
 - 確認後台填寫的 LIFF ID 是否正確
 - LIFF ID 格式應為：`數字-英數字`（例如：`2008889284-MuPboxSM`）
 
 ### 常見問題 2：缺少 tenantId
+
 **錯誤訊息**：缺少社區 ID 參數
 **解決方法**：
+
 - 確認圖文選單中的連結是否包含 `?tenantId=` 參數
 - 應該是：`https://liff.line.me/{LIFF_ID}?tenantId={社區ID}`
 
 ### 常見問題 3：CORS 或網路錯誤
+
 **解決方法**：
+
 - 確認 Endpoint URL 設定正確
 - 確認應用已成功部署到 Firebase
 
 ### 常見問題 4：找不到社區資料
+
 **錯誤訊息**：找不到社區資料
 **解決方法**：
+
 - 確認 tenantId 是否正確
 - 檢查 Firestore 中是否存在該社區
 
@@ -217,6 +234,7 @@
 ## 📞 需要協助？
 
 如果您能提供以下資訊，我可以幫您檢查：
+
 1. LINE Developers Console 的截圖（LIFF 設定頁面）
 2. 後台社區管理中的 LINE 設定截圖
 3. 圖文選單中設定的連結

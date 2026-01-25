@@ -15,10 +15,10 @@
 ```typescript
 export interface BeaconUUID {
   id: string;
-  uuid: string;              // UUID 字串
-  name: string;              // 名稱（例如：公司主要 UUID）
-  description?: string;      // 說明
-  isActive: boolean;         // 是否啟用
+  uuid: string; // UUID 字串
+  name: string; // 名稱（例如：公司主要 UUID）
+  description?: string; // 說明
+  isActive: boolean; // 是否啟用
   createdAt?: string;
   updatedAt?: string;
 }
@@ -29,21 +29,26 @@ export interface BeaconUUID {
 ### 2. 新增檔案
 
 #### 服務層
+
 - ✅ `/src/services/uuidService.ts` - UUID 管理服務
 
 #### 頁面
+
 - ✅ `/src/pages/UUIDsPage.tsx` - UUID 管理頁面
 
 #### 路由
+
 - ✅ 更新 `/src/App.tsx` - 新增 `/uuids` 路由
 - ✅ 更新 `/src/layouts/DashboardLayout.tsx` - 新增導航菜單項目
 
 ### 3. 修改檔案
 
 #### 類型定義
+
 - ✅ `/src/types/index.ts` - 新增 `BeaconUUID` 介面
 
 #### 設備管理頁面
+
 - ✅ `/src/pages/DevicesPage.tsx`
   - 訂閱 UUID 列表
   - UUID 欄位改為下拉選單
@@ -80,6 +85,7 @@ export interface BeaconUUID {
 ### UUID 管理頁面
 
 **功能列表：**
+
 - ✅ 查看所有 UUID
 - ✅ 新增 UUID
 - ✅ 編輯 UUID
@@ -95,16 +101,19 @@ export interface BeaconUUID {
 | 狀態 | 啟用/停用 | 是 |
 
 **UUID 格式驗證：**
+
 - 格式：`XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`
 - 範例：`E2C56DB5-DFFB-48D2-B060-D0F5A71096E0`
 
 ### 設備管理頁面（更新）
 
 **UUID 欄位變更：**
+
 - **修改前**：文字輸入框（手動輸入）
 - **修改後**：下拉選單（從 UUID 管理中選擇）
 
 **顯示格式：**
+
 ```
 請選擇 UUID
 公司主要 UUID - E2C56DB5-DFFB-48D2-B060-D0F5A71096E0
@@ -112,7 +121,8 @@ export interface BeaconUUID {
 ```
 
 **提示訊息：**
-- 若有可用 UUID：「💡 若需要新的 UUID，請前往「UUID 管理」新增」
+
+- 若有可用 UUID：「 若需要新的 UUID，請前往「UUID 管理」新增」
 - 若無可用 UUID：「⚠️ 尚未建立 UUID，請先前往「UUID 管理」新增」
 
 ---
@@ -125,22 +135,22 @@ export interface BeaconUUID {
 export const uuidService = {
   // 訂閱所有 UUID（即時更新）
   subscribe: (callback) => { ... },
-  
+
   // 訂閱活躍的 UUID（即時更新）
   subscribeActive: (callback) => { ... },
-  
+
   // 獲取單個 UUID
   getOne: async (id) => { ... },
-  
+
   // 根據 UUID 字串獲取記錄
   getByUuid: async (uuid) => { ... },
-  
+
   // 新增 UUID
   create: async (data) => { ... },
-  
+
   // 更新 UUID
   update: async (id, data) => { ... },
-  
+
   // 刪除 UUID
   delete: async (id) => { ... },
 };
@@ -204,21 +214,25 @@ const unsubscribeUuids = uuidService.subscribeActive((uuidData) => {
 ## 🎯 優點
 
 ### 1. 統一管理
+
 - ✅ 集中管理所有 UUID
 - ✅ 避免重複輸入錯誤
 - ✅ 易於維護和更新
 
 ### 2. 操作簡便
+
 - ✅ 下拉選單選擇，不需手動輸入
 - ✅ 顯示名稱和 UUID，易於識別
 - ✅ 自動過濾停用的 UUID
 
 ### 3. 靈活擴展
+
 - ✅ 可以新增多個 UUID 供選擇
 - ✅ 可以啟用/停用 UUID 而不刪除
 - ✅ 支援說明欄位，記錄用途
 
 ### 4. 避免錯誤
+
 - ✅ UUID 格式驗證
 - ✅ 防止輸入錯誤格式
 - ✅ 確保使用統一的 UUID
@@ -252,6 +266,7 @@ UUID 管理（Firestore）
 ### 3. 已使用的 UUID
 
 刪除 UUID 前，請確認：
+
 - ✅ 沒有設備正在使用此 UUID
 - ✅ 或先將設備改用其他 UUID
 
@@ -260,6 +275,7 @@ UUID 管理（Firestore）
 ## 🧪 測試清單
 
 ### UUID 管理頁面
+
 - [ ] 新增 UUID - 格式正確
 - [ ] 新增 UUID - 格式錯誤（應顯示錯誤）
 - [ ] 編輯 UUID
@@ -268,12 +284,14 @@ UUID 管理（Firestore）
 - [ ] 刪除 UUID
 
 ### 設備管理頁面
+
 - [ ] UUID 下拉選單是否顯示所有啟用的 UUID
 - [ ] 選擇 UUID 後是否正確填入
 - [ ] 無可用 UUID 時是否顯示提示訊息
 - [ ] 新增設備時 UUID 是否正確儲存
 
 ### 整合測試
+
 - [ ] 在 UUID 管理新增 UUID
 - [ ] 在設備管理中選擇該 UUID
 - [ ] 儲存設備後檢查 Firestore 資料
@@ -310,7 +328,8 @@ beacon_uuids/
 
 ### Q1: 為什麼要統一管理 UUID？
 
-**A:** 
+**A:**
+
 1. 避免手動輸入錯誤
 2. 確保所有設備使用相同的 UUID
 3. 方便更新和維護
@@ -319,6 +338,7 @@ beacon_uuids/
 ### Q2: 可以有多個 UUID 嗎？
 
 **A:** 可以。你可以根據不同的設備類型或用途建立多個 UUID。例如：
+
 - UUID 1：工卡型 Beacon
 - UUID 2：手環型 Beacon
 - UUID 3：測試環境專用
@@ -330,6 +350,7 @@ beacon_uuids/
 ### Q4: 如何產生新的 UUID？
 
 **A:** 可以使用線上工具產生：
+
 - https://www.uuidgenerator.net/
 - 或使用 BeaconSET+ App 產生隨機 UUID
 
@@ -354,7 +375,8 @@ beacon_uuids/
 ---
 
 **建立日期：** 2026-01-20  
-**檔案位置：** 
+**檔案位置：**
+
 - `/src/services/uuidService.ts`
 - `/src/pages/UUIDsPage.tsx`
 - Firestore: `beacon_uuids` collection

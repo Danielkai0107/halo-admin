@@ -27,7 +27,7 @@
       "major": 1,
       "minor": 1001,
       "rssi": -65,
-      "batteryLevel": 85  // ✨ 新增：電量百分比（選填）
+      "batteryLevel": 85 // ✨ 新增：電量百分比（選填）
     }
   ]
 }
@@ -74,7 +74,7 @@ interface BeaconData {
   major: number;
   minor: number;
   rssi: number;
-  batteryLevel?: number;  // 新增
+  batteryLevel?: number; // 新增
 }
 
 // 設備更新邏輯
@@ -93,7 +93,7 @@ await deviceDoc.ref.update(deviceUpdateData);
 
 ---
 
-## 📱 使用方式
+## 使用方式
 
 ### 1. Android 接收器端
 
@@ -112,6 +112,7 @@ val beaconData = JSONObject().apply {
 ### 2. 在管理後台查看
 
 進入「設備管理」頁面，可以看到：
+
 - 電量百分比顯示
 - 電量圖示根據電量等級顯示不同顏色：
   - 🟢 綠色：60% 以上
@@ -121,6 +122,7 @@ val beaconData = JSONObject().apply {
 ### 3. 低電量警報（未來功能）
 
 後續可以基於電量資訊實作：
+
 - 低電量警報（當電量低於 20% 時發送通知）
 - 電量趨勢圖表
 - 電量統計報表
@@ -162,18 +164,18 @@ val beaconData = JSONObject().apply {
   minor: number;
   deviceName?: string;
   type: DeviceType;
-  
+
   // 電量和狀態資訊
   batteryLevel?: number;      // 0-100，新增支援
   lastSeen?: string;          // ISO 8601 格式
   lastRssi?: number;          // 信號強度
-  
+
   // 綁定資訊
   tenantId: string | null;
   elderId: string | null;
   mapAppUserId?: string;
   poolType?: PoolType;
-  
+
   isActive: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -218,7 +220,7 @@ val beaconData = JSONObject().apply {
 
 ---
 
-## 💡 技術注意事項
+## 技術注意事項
 
 1. **Beacon 電量廣播**：
    - 並非所有 Beacon 都支援電量廣播

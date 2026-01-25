@@ -16,7 +16,7 @@ export const getTenantMembers = async (tenantId: string): Promise<TenantMember[]
       // 獲取對應的 appUser 資料
       if (memberData.appUserId) {
         try {
-          const appUserDoc = await getDoc(doc(db, 'appUsers', memberData.appUserId));
+          const appUserDoc = await getDoc(doc(db, 'line_users', memberData.appUserId));
           if (appUserDoc.exists()) {
             return {
               id: memberDoc.id,

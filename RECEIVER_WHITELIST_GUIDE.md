@@ -31,6 +31,7 @@
 **方法:** `GET` 或 `POST`
 
 **回應格式:**
+
 ```json
 {
   "success": true,
@@ -50,9 +51,9 @@
 
 ---
 
-## 💡 核心識別邏輯
+## 核心識別邏輯
 
-### ⭐ 識別方式（修改後）
+### 識別方式（修改後）
 
 **使用組合鍵：UUID + Major + Minor**
 
@@ -74,6 +75,7 @@ data class BeaconIdentifier(
 ### ❌ 不要使用 MAC Address
 
 **原因：**
+
 - Beacon 的 MAC 會隨機變化（BLE 隱私保護）
 - 不可靠，會導致比對失敗
 
@@ -93,30 +95,30 @@ data class WhitelistDevice(
 
 class DeviceWhitelist {
     private val devices = mutableSetOf<WhitelistDevice>()
-    
+
     fun update(newDevices: List<WhitelistDevice>) {
         devices.clear()
         devices.addAll(newDevices)
         Log.d("Whitelist", "Updated whitelist: ${devices.size} devices")
     }
-    
+
     fun isInWhitelist(beacon: Beacon): Boolean {
         val uuid = beacon.id1.toString()
         val major = beacon.id2.toInt()
         val minor = beacon.id3.toInt()
-        
+
         return devices.any { device ->
             device.uuid.equals(uuid, ignoreCase = true) &&
             device.major == major &&
             device.minor == minor
         }
     }
-    
+
     fun getDeviceInfo(beacon: Beacon): WhitelistDevice? {
         val uuid = beacon.id1.toString()
         val major = beacon.id2.toInt()
         val minor = beacon.id3.toInt()
-        
+
         return devices.find { device ->
             device.uuid.equals(uuid, ignoreCase = true) &&
             device.major == major &&
@@ -132,7 +134,7 @@ class DeviceWhitelist {
 class WhitelistManager(private val context: Context) {
     private val whitelist = DeviceWhitelist()
     private val updateInterval = 5 * 60 * 1000L // 5 分鐘
-    
+
     private val handler = Handler(Looper.getMainLooper())
     private val updateRunnable = object : Runnable {
         override fun run() {
@@ -140,22 +142,22 @@ class WhitelistManager(private val context: Context) {
             handler.postDelayed(this, updateInterval)
         }
     }
-    
+
     fun start() {
         fetchWhitelist() // 立即獲取
         handler.postDelayed(updateRunnable, updateInterval)
     }
-    
+
     fun stop() {
         handler.removeCallbacks(updateRunnable)
     }
-    
+
     private fun fetchWhitelist() {
         lifecycleScope.launch {
             try {
                 val response = apiService.getWhitelist()
                 if (response.success) {
-                    val devices = response.devices.map { 
+                    val devices = response.devices.map {
                         WhitelistDevice(
                             uuid = it.uuid,
                             major = it.major,
@@ -171,7 +173,7 @@ class WhitelistManager(private val context: Context) {
             }
         }
     }
-    
+
     fun isInWhitelist(beacon: Beacon): Boolean {
         return whitelist.isInWhitelist(beacon)
     }
@@ -182,19 +184,19 @@ class WhitelistManager(private val context: Context) {
 
 ```kotlin
 class BeaconScanner(private val whitelistManager: WhitelistManager) {
-    
+
     fun onBeaconsDetected(beacons: Collection<Beacon>) {
         val filteredBeacons = beacons.filter { beacon ->
             // 只處理在白名單中的 Beacon
             whitelistManager.isInWhitelist(beacon)
         }
-        
+
         if (filteredBeacons.isNotEmpty()) {
             Log.d("Scanner", "Found ${filteredBeacons.size} whitelisted beacons")
             uploadBeacons(filteredBeacons)
         }
     }
-    
+
     private fun uploadBeacons(beacons: Collection<Beacon>) {
         val beaconDataList = beacons.map { beacon ->
             BeaconData(
@@ -204,7 +206,7 @@ class BeaconScanner(private val whitelistManager: WhitelistManager) {
                 rssi = beacon.rssi
             )
         }
-        
+
         // 上傳到 receiveBeaconData API
         uploadToServer(beaconDataList)
     }
@@ -222,32 +224,32 @@ class MainActivity : AppCompatActivity(), BeaconConsumer {
     private lateinit var beaconManager: BeaconManager
     private lateinit var whitelistManager: WhitelistManager
     private lateinit var apiClient: ApiClient
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // 1. 初始化白名單管理器
         whitelistManager = WhitelistManager(this)
         whitelistManager.start()
-        
+
         // 2. 初始化 Beacon 掃描
         beaconManager = BeaconManager.getInstanceForApplication(this)
         beaconManager.beaconParsers.add(
             BeaconParser().setBeaconLayout(IBEACON_LAYOUT)
         )
         beaconManager.bind(this)
-        
+
         // 3. 初始化 API 客戶端
         apiClient = ApiClient()
     }
-    
+
     override fun onBeaconServiceConnect() {
         beaconManager.addRangeNotifier { beacons, region ->
             if (beacons.isNotEmpty()) {
                 processBeacons(beacons)
             }
         }
-        
+
         try {
             // 開始掃描所有 iBeacon
             beaconManager.startRangingBeaconsInRegion(
@@ -257,7 +259,7 @@ class MainActivity : AppCompatActivity(), BeaconConsumer {
             e.printStackTrace()
         }
     }
-    
+
     private fun processBeacons(beacons: Collection<Beacon>) {
         lifecycleScope.launch {
             // 過濾白名單中的 Beacon
@@ -268,17 +270,17 @@ class MainActivity : AppCompatActivity(), BeaconConsumer {
                     }
                 }
             }
-            
+
             if (whitelistedBeacons.isNotEmpty()) {
                 uploadBeacons(whitelistedBeacons)
             }
         }
     }
-    
+
     private suspend fun uploadBeacons(beacons: Collection<Beacon>) {
         try {
             val location = getCurrentLocation()
-            
+
             val payload = BeaconUploadPayload(
                 gateway_id = getDeviceId(), // IMEI 或設備 ID
                 lat = location.latitude,
@@ -293,15 +295,15 @@ class MainActivity : AppCompatActivity(), BeaconConsumer {
                     )
                 }
             )
-            
+
             val response = apiClient.uploadBeacons(payload)
             Log.d("Upload", "Success: ${response.updated} updated, ${response.ignored} ignored")
-            
+
         } catch (e: Exception) {
             Log.e("Upload", "Failed to upload beacons", e)
         }
     }
-    
+
     override fun onDestroy() {
         super.onDestroy()
         beaconManager.unbind(this)
@@ -317,6 +319,7 @@ class MainActivity : AppCompatActivity(), BeaconConsumer {
 ### 1. 比對邏輯
 
 **正確 ✅：**
+
 ```kotlin
 // 使用 UUID + Major + Minor 組合
 fun isMatch(beacon: Beacon, whitelistItem: WhitelistDevice): Boolean {
@@ -327,6 +330,7 @@ fun isMatch(beacon: Beacon, whitelistItem: WhitelistDevice): Boolean {
 ```
 
 **錯誤 ❌：**
+
 ```kotlin
 // 不要只用 UUID
 fun isMatch(beacon: Beacon, whitelistItem: WhitelistDevice): Boolean {
@@ -369,7 +373,7 @@ try {
 class DeviceWhitelist {
     // 使用 HashSet 加速查找
     private val deviceKeys = mutableSetOf<String>()
-    
+
     fun update(devices: List<WhitelistDevice>) {
         deviceKeys.clear()
         devices.forEach { device ->
@@ -378,7 +382,7 @@ class DeviceWhitelist {
             deviceKeys.add(key.lowercase())
         }
     }
-    
+
     fun isInWhitelist(beacon: Beacon): Boolean {
         val key = "${beacon.id1}:${beacon.id2}:${beacon.id3}".lowercase()
         return deviceKeys.contains(key)
@@ -403,7 +407,7 @@ fun testWhitelistMatching() {
             minor = 1001
         )
     ))
-    
+
     // 測試：正確的 Beacon 應該在白名單中
     val beacon = createTestBeacon(
         uuid = "E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
@@ -411,7 +415,7 @@ fun testWhitelistMatching() {
         minor = 1001
     )
     assertTrue(whitelist.isInWhitelist(beacon))
-    
+
     // 測試：不同 Major 應該不在白名單中
     val beacon2 = createTestBeacon(
         uuid = "E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
@@ -437,6 +441,7 @@ fun testWhitelistMatching() {
 ### 問題：掃描到 Beacon 但沒有上傳
 
 **檢查清單：**
+
 ```kotlin
 // 1. 確認 Beacon 資訊
 Log.d("Beacon", "UUID: ${beacon.id1}")
@@ -457,6 +462,7 @@ Log.d("Match", "Beacon in whitelist: $isInWhitelist")
 ### 問題：白名單一直是空的
 
 **檢查：**
+
 1. API 端點是否正確
 2. 網路連線是否正常
 3. 後台是否有啟用的設備

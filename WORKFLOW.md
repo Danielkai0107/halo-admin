@@ -9,7 +9,7 @@
 1. 採購設備後，進入「設備管理」頁面
 2. 點擊「新增設備」
 3. 填寫設備資訊：
-   - **UUID** ⭐ (主要判定指標，必填)
+   - **UUID** (主要判定指標，必填)
    - MAC Address (輔助識別)
    - 設備名稱
    - 設備類型 (iBeacon/Eddystone/Generic BLE)
@@ -18,6 +18,7 @@
 4. **注意：** 此時不需要選擇社區或長者，設備會進入「設備池」
 
 **資料狀態：**
+
 ```javascript
 {
   uuid: "550e8400-e29b-41d4-a716-446655440000",
@@ -45,6 +46,7 @@
 4. **注意：** 此時不需要選擇社區，接收點可以稍後分配
 
 **資料狀態：**
+
 ```javascript
 {
   serialNumber: "GW-001",
@@ -82,6 +84,7 @@
 4. 設備現在屬於該社區，可以綁定給長者使用
 
 **資料變化：**
+
 ```javascript
 // 設備資料更新
 {
@@ -104,7 +107,7 @@
 1. 進入「長者管理」頁面
 2. 點擊「新增長者」或編輯現有長者
 3. 填寫長者基本資訊：
-   - 所屬社區 ⭐ (先選擇社區)
+   - 所屬社區 (先選擇社區)
    - 姓名
    - 電話
    - 地址
@@ -118,6 +121,7 @@
    - 選擇一個設備綁定給該長者
 
 **資料最終狀態：**
+
 ```javascript
 // 設備
 {
@@ -142,25 +146,32 @@
 ### 設備查詢
 
 #### 1. 設備池（未分配設備）
+
 ```javascript
 // 顯示所有 tenantId === null 的設備
-deviceService.getUnassignedDevices()
+deviceService.getUnassignedDevices();
 ```
+
 **用於：** 社區管理員分配設備到社區
 
 #### 2. 社區可用設備（已分配但未綁定）
+
 ```javascript
 // tenantId === 'xxx' AND elderId === null
-deviceService.getAvailableDevicesInTenant(tenantId)
+deviceService.getAvailableDevicesInTenant(tenantId);
 ```
+
 **用於：** 長者管理中選擇設備
 
 #### 3. 設備唯一性驗證（使用 UUID）
+
 ```javascript
 // 主要判定指標
-deviceService.getByUuid(uuid)
+deviceService.getByUuid(uuid);
 ```
-**用於：** 
+
+**用於：**
+
 - 防止重複登記
 - 設備識別
 - 資料同步
@@ -200,11 +211,13 @@ deviceService.getByUuid(uuid)
 ## 🎯 關鍵設計原則
 
 ### 1. UUID 為主要判定指標
+
 - ✅ 使用 `uuid` 識別設備
 - ✅ `getByUuid()` 查詢設備
 - ℹ️ `macAddress` 僅作為輔助識別
 
 ### 2. 三層資源管理
+
 ```
 設備池 → 社區資源 → 長者綁定
   ↓         ↓          ↓
@@ -212,30 +225,35 @@ deviceService.getByUuid(uuid)
 ```
 
 ### 3. 資源狀態流轉
+
 - **未分配** → 在設備池中，可分配給任何社區
 - **已分配** → 屬於特定社區，可綁定給該社區的長者
 - **已綁定** → 正在被特定長者使用
 
 ### 4. 權限控制
+
 - **超級管理員：** 可管理設備池、所有社區
 - **社區管理員：** 只能管理自己社區的資源
 - **一般員工：** 查看權限
 
-## 💡 使用建議
+## 使用建議
 
 ### 設備命名規範
+
 ```
 設備名稱：[類型]-[編號]
 範例：iBeacon-001, Eddystone-A01
 ```
 
 ### UUID 格式
+
 ```
 標準 UUID v4 格式：
 550e8400-e29b-41d4-a716-446655440000
 ```
 
 ### 社區代碼規範
+
 ```
 [社區簡稱][流水號]
 範例：DALOVE001, SUNRISE002
@@ -244,17 +262,20 @@ deviceService.getByUuid(uuid)
 ## 🔄 常見操作流程
 
 ### 設備回收/重新分配
+
 1. 編輯長者資料，解除設備綁定（elderId → null）
 2. 設備回到「社區可用設備」
 3. 可分配給該社區的其他長者
 
 ### 設備轉移社區
+
 1. 解除設備與長者的綁定
 2. 在社區管理中移除設備（tenantId → null）
 3. 設備回到設備池
 4. 重新分配到新社區
 
 ### 社區關閉/遷移
+
 1. 解除所有長者的設備綁定
 2. 批量移除社區的所有設備
 3. 設備回到設備池可重新分配

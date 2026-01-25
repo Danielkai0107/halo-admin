@@ -162,7 +162,7 @@ export const tenantService = {
         const memberInfo = memberRoleMap.get(appUser.id);
         return {
           id: memberInfo?.memberId || `virtual_${appUser.id}`,
-          appUserId: appUser.id,
+          lineUserId: appUser.id,
           role: memberInfo?.role || 'MEMBER',
           appUser: {
             id: appUser.id,

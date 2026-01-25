@@ -9,6 +9,7 @@
 ## 🔗 API 端點
 
 **URL:**
+
 ```
 https://getserviceuuids-kmzfyt3t5a-uc.a.run.app
 ```
@@ -37,12 +38,12 @@ https://getserviceuuids-kmzfyt3t5a-uc.a.run.app
 
 ### 欄位說明
 
-| 欄位 | 類型 | 說明 |
-|------|------|------|
-| success | boolean | 請求是否成功 |
-| uuids | string[] | UUID 字串陣列 |
-| count | number | UUID 數量 |
-| timestamp | number | 回應時間戳（毫秒） |
+| 欄位      | 類型     | 說明               |
+| --------- | -------- | ------------------ |
+| success   | boolean  | 請求是否成功       |
+| uuids     | string[] | UUID 字串陣列      |
+| count     | number   | UUID 數量          |
+| timestamp | number   | 回應時間戳（毫秒） |
 
 ---
 
@@ -55,7 +56,7 @@ https://getserviceuuids-kmzfyt3t5a-uc.a.run.app
 ```kotlin
 class BeaconScanner {
     private val serviceUuids = mutableSetOf<String>()
-    
+
     suspend fun initialize() {
         try {
             val response = apiService.getServiceUuids()
@@ -68,7 +69,7 @@ class BeaconScanner {
             Log.e("Scanner", "Failed to load service UUIDs", e)
         }
     }
-    
+
     fun shouldScan(beaconUuid: String): Boolean {
         return serviceUuids.contains(beaconUuid)
     }
@@ -85,20 +86,20 @@ class BeaconManager {
         "E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
         "FDA50693-A4E2-4FB1-AFCF-C6EB07647825"
     )
-    
+
     fun startScanning() {
         beaconManager.startRangingBeaconsInRegion(
-            Region("myBeacons", 
+            Region("myBeacons",
                 Identifier.parse(serviceUuids[0]), // 主要 UUID
                 null, null
             )
         )
-        
+
         // 如果有多個 UUID，為每個 UUID 創建 Region
         serviceUuids.forEach { uuid ->
             beaconManager.startRangingBeaconsInRegion(
-                Region("uuid-$uuid", 
-                    Identifier.parse(uuid), 
+                Region("uuid-$uuid",
+                    Identifier.parse(uuid),
                     null, null
                 )
             )
@@ -109,7 +110,7 @@ class BeaconManager {
 
 ---
 
-## 💡 與白名單 API 的區別
+## 與白名單 API 的區別
 
 ### getServiceUuids（本 API）
 
@@ -162,7 +163,7 @@ class BeaconManager {
 interface BeaconApiService {
     @GET("getServiceUuids")
     suspend fun getServiceUuids(): ServiceUuidResponse
-    
+
     @GET("getDeviceWhitelist")
     suspend fun getDeviceWhitelist(): DeviceWhitelistResponse
 }
@@ -178,7 +179,7 @@ data class ServiceUuidResponse(
 class ServiceUuidManager(private val apiService: BeaconApiService) {
     private val _serviceUuids = MutableStateFlow<Set<String>>(emptySet())
     val serviceUuids: StateFlow<Set<String>> = _serviceUuids.asStateFlow()
-    
+
     suspend fun fetchServiceUuids() {
         try {
             val response = apiService.getServiceUuids()
@@ -190,7 +191,7 @@ class ServiceUuidManager(private val apiService: BeaconApiService) {
             Log.e("UuidManager", "Failed to fetch service UUIDs", e)
         }
     }
-    
+
     fun isValidServiceUuid(uuid: String): Boolean {
         return _serviceUuids.value.contains(uuid)
     }
@@ -201,20 +202,20 @@ class BeaconScannerService : Service(), BeaconConsumer {
     private lateinit var beaconManager: BeaconManager
     private lateinit var serviceUuidManager: ServiceUuidManager
     private lateinit var whitelistManager: DeviceWhitelistManager
-    
+
     override fun onCreate() {
         super.onCreate()
-        
+
         // 初始化管理器
         serviceUuidManager = ServiceUuidManager(apiService)
         whitelistManager = DeviceWhitelistManager(apiService)
-        
+
         // 獲取服務 UUID（初始化一次即可）
         lifecycleScope.launch {
             serviceUuidManager.fetchServiceUuids()
             setupBeaconScanning()
         }
-        
+
         // 定期更新白名單（每 5 分鐘）
         lifecycleScope.launch {
             while (isActive) {
@@ -223,41 +224,41 @@ class BeaconScannerService : Service(), BeaconConsumer {
             }
         }
     }
-    
+
     private fun setupBeaconScanning() {
         beaconManager = BeaconManager.getInstanceForApplication(this)
-        
+
         // 設定掃描的 UUID（從服務 UUID 管理器獲取）
         serviceUuidManager.serviceUuids.value.forEach { uuid ->
             val region = Region("service-$uuid", Identifier.parse(uuid), null, null)
             beaconManager.startRangingBeaconsInRegion(region)
             Log.d("Scanner", "Started ranging for UUID: $uuid")
         }
-        
+
         beaconManager.addRangeNotifier { beacons, region ->
             onBeaconsDetected(beacons)
         }
-        
+
         beaconManager.bind(this)
     }
-    
+
     private fun onBeaconsDetected(beacons: Collection<Beacon>) {
         // 第一層過濾：檢查 UUID 是否在服務 UUID 列表中
         val validServiceBeacons = beacons.filter { beacon ->
             serviceUuidManager.isValidServiceUuid(beacon.id1.toString())
         }
-        
+
         // 第二層過濾：檢查是否在白名單中（UUID + Major + Minor）
         val whitelistedBeacons = validServiceBeacons.filter { beacon ->
             whitelistManager.isInWhitelist(beacon)
         }
-        
+
         if (whitelistedBeacons.isNotEmpty()) {
             Log.d("Scanner", "Found ${whitelistedBeacons.size} whitelisted beacons")
             uploadBeacons(whitelistedBeacons)
         }
     }
-    
+
     private suspend fun uploadBeacons(beacons: Collection<Beacon>) {
         // 上傳到 receiveBeaconData API
         // ...
@@ -287,9 +288,7 @@ curl -X POST https://getserviceuuids-kmzfyt3t5a-uc.a.run.app
 ```json
 {
   "success": true,
-  "uuids": [
-    "E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"
-  ],
+  "uuids": ["E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"],
   "count": 1,
   "timestamp": 1737360123456
 }
@@ -309,7 +308,7 @@ class ServiceUuidManager {
             fetchServiceUuids()
         }
     }
-    
+
     // 每天更新一次（服務 UUID 很少變動）
     fun startPeriodicUpdate() {
         lifecycleScope.launch {
@@ -330,7 +329,7 @@ suspend fun fetchServiceUuids() {
         val response = withTimeout(10_000) {
             apiService.getServiceUuids()
         }
-        
+
         if (response.success && response.uuids.isNotEmpty()) {
             _serviceUuids.value = response.uuids.map { it.uuid }.toSet()
             saveToCache(response.uuids) // 快取到本地
@@ -375,12 +374,14 @@ private fun loadFromCache() {
 ### 為什麼需要這個 API？
 
 **沒有這個 API：**
+
 - 接收器掃描所有 UUID 的 Beacon
 - 需要下載完整的白名單（可能很大）
 - 再過濾出不需要的 Beacon
 - 浪費電量和網路
 
 **有這個 API：**
+
 - 接收器只掃描指定 UUID 的 Beacon
 - 大幅減少掃描和處理的 Beacon 數量
 - 省電、省網路、提升效能

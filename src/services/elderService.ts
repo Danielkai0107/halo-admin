@@ -2,9 +2,9 @@ import {
   query,
   where,
   orderBy,
+  limit,
   collection,
   getDocs,
-  Timestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import {
@@ -80,24 +80,69 @@ export const elderService = {
     }
   },
 
-  // 獲取長者活動記錄（從 latest_locations/history 讀取）
+  // 獲取長者活動記錄（從設備的 activities 子集合讀取）
   getActivity: async (id: string, hours: number = 24) => {
     try {
+      // 先獲取長者資料以取得綁定的設備 ID
+      const elderDoc = await getDocument('elders', id);
+      const deviceId = (elderDoc as any)?.deviceId;
+      
+      if (!deviceId) {
+        console.log('Elder has no bound device, no activities to show');
+        return { data: [] };
+      }
+      
+      console.log(`Loading activities for elder ${id}, device ${deviceId}`);
+      
       const startTime = new Date();
       startTime.setHours(startTime.getHours() - hours);
       
+      // 從設備的子集合查詢活動記錄
       const activityQuery = query(
-        collection(db, 'latest_locations', id, 'history'),
-        where('timestamp', '>=', Timestamp.fromDate(startTime)),
-        orderBy('timestamp', 'desc')
+        collection(db, 'devices', deviceId, 'activities'),
+        orderBy('timestamp', 'desc'),
+        limit(100)
       );
       
       const activitySnap = await getDocs(activityQuery);
-      const activities = activitySnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      console.log(`Found ${activitySnap.docs.length} total activities for device`);
+      
+      // 在客戶端過濾時間範圍和綁定類型
+      const activities = activitySnap.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            timestamp: data.timestamp,
+            gateway: data.gateway || {
+              name: data.gatewayName,
+              location: data.gatewayLocation,
+            },
+            latitude: data.latitude,
+            longitude: data.longitude,
+            rssi: data.rssi,
+            bindingType: data.bindingType,
+          };
+        })
+        .filter((activity: any) => {
+          // 只顯示 ELDER 類型的活動
+          if (activity.bindingType !== 'ELDER') return false;
+          
+          // 時間範圍過濾
+          let activityDate: Date;
+          const timestamp = activity.timestamp;
+          if (timestamp?.toDate && typeof timestamp.toDate === 'function') {
+            activityDate = timestamp.toDate();
+          } else if (timestamp?.seconds) {
+            activityDate = new Date(timestamp.seconds * 1000);
+          } else {
+            activityDate = new Date(timestamp);
+          }
+          
+          return activityDate >= startTime;
+        });
 
+      console.log(`After filtering: ${activities.length} ELDER activities in time range`);
       return { data: activities };
     } catch (error) {
       console.error('Failed to get elder activity:', error);
@@ -169,23 +214,21 @@ export const elderService = {
     }
   },
 
-  // 獲取可用設備（該社區未綁定的設備）
+  // 獲取可用設備（該社區 tag 的未綁定設備）
   getAvailableDevices: async (tenantId: string) => {
     try {
-      // 查詢屬於該社區的所有設備
+      // 使用新的資料結構：tags 陣列包含社區 ID，bindingType 為 UNBOUND
       const devicesQuery = query(
         collection(db, 'devices'),
-        where('tenantId', '==', tenantId)
+        where('tags', 'array-contains', tenantId),
+        where('bindingType', '==', 'UNBOUND')
       );
       
       const devicesSnap = await getDocs(devicesQuery);
-      const allDevices = devicesSnap.docs.map(doc => ({
+      const availableDevices = devicesSnap.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       }));
-
-      // 在客戶端過濾未綁定長者的設備（elderId 為 null 或 undefined）
-      const availableDevices = allDevices.filter((device: any) => !device.elderId);
 
       return { data: availableDevices };
     } catch (error) {

@@ -8,9 +8,6 @@ import { TenantSelectScreen } from './screens/TenantSelectScreen';
 import { ElderListScreen } from './screens/elders/ElderListScreen';
 import { ElderDetailScreen } from './screens/elders/ElderDetailScreen';
 import { AddElderScreen } from './screens/elders/AddElderScreen';
-import { AlertListScreen } from './screens/alerts/AlertListScreen';
-import { AlertDetailScreen } from './screens/alerts/AlertDetailScreen';
-import { ProfileScreen } from './screens/profile/ProfileScreen';
 import type { Tenant } from './types';
 
 const App = () => {
@@ -88,9 +85,6 @@ const AppContent = () => {
         <Route path="/elders" element={<ElderListScreen />} />
         <Route path="/elders/:id" element={<ElderDetailScreen />} />
         <Route path="/elders/add" element={<AddElderScreen />} />
-        <Route path="/alerts" element={<AlertListScreen />} />
-        <Route path="/alerts/:id" element={<AlertDetailScreen />} />
-        <Route path="/profile" element={<ProfileScreen />} />
         <Route path="*" element={<Navigate to="/elders" replace />} />
       </Routes>
     </Layout>

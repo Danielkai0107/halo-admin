@@ -1,6 +1,15 @@
 import * as admin from 'firebase-admin';
 import { onRequest } from 'firebase-functions/v2/https';
 
+// 標準錯誤碼定義
+const ErrorCodes = {
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  ACCOUNT_DELETED: 'ACCOUNT_DELETED',
+} as const;
+
 interface UpdateFcmTokenRequest {
   userId: string;
   fcmToken: string;
@@ -29,7 +38,11 @@ export const updateMapUserFcmToken = onRequest(async (req, res) => {
   }
 
   if (req.method !== 'POST') {
-    res.status(405).json({ success: false, error: 'Method not allowed' });
+    res.status(405).json({ 
+      success: false, 
+      error: '不支援此請求方法',
+      errorCode: ErrorCodes.VALIDATION_ERROR,
+    });
     return;
   }
 
@@ -37,21 +50,50 @@ export const updateMapUserFcmToken = onRequest(async (req, res) => {
     // Verify Firebase ID Token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ success: false, error: 'Unauthorized: Missing or invalid token' });
+      res.status(401).json({ 
+        success: false, 
+        error: '未授權：缺少或無效的認證令牌',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
       return;
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (tokenError) {
+      res.status(401).json({ 
+        success: false, 
+        error: '未授權：認證令牌無效或已過期',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
+      return;
+    }
+    
     const authenticatedUserId = decodedToken.uid;
 
     const body: UpdateFcmTokenRequest = req.body;
 
     // Validate request
-    if (!body.userId || !body.fcmToken) {
+    const validationErrors: Record<string, string> = {};
+    
+    if (!body.userId) {
+      validationErrors.userId = '缺少必填欄位 userId';
+    }
+    
+    if (!body.fcmToken) {
+      validationErrors.fcmToken = '缺少必填欄位 fcmToken';
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
       res.status(400).json({ 
         success: false, 
-        error: 'Missing required fields: userId and fcmToken' 
+        error: '參數驗證失敗',
+        errorCode: ErrorCodes.VALIDATION_ERROR,
+        errorDetails: {
+          fields: validationErrors
+        }
       });
       return;
     }
@@ -60,19 +102,33 @@ export const updateMapUserFcmToken = onRequest(async (req, res) => {
     if (body.userId !== authenticatedUserId) {
       res.status(403).json({ 
         success: false, 
-        error: 'Forbidden: Cannot update another user\'s FCM token' 
+        error: '禁止操作：無法更新其他用戶的 FCM token',
+        errorCode: ErrorCodes.UNAUTHORIZED,
       });
       return;
     }
 
     const db = admin.firestore();
-    const userRef = db.collection('mapAppUsers').doc(body.userId);
+    const userRef = db.collection('app_users').doc(body.userId);
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
       res.status(404).json({ 
         success: false, 
-        error: 'User not found' 
+        error: '帳號不存在或已被刪除',
+        errorCode: ErrorCodes.USER_NOT_FOUND,
+      });
+      return;
+    }
+
+    const userData = userDoc.data();
+
+    // 檢查用戶是否已被刪除標記
+    if (userData?.isDeleted) {
+      res.status(410).json({ 
+        success: false, 
+        error: '帳號已被刪除',
+        errorCode: ErrorCodes.ACCOUNT_DELETED,
       });
       return;
     }
@@ -85,14 +141,15 @@ export const updateMapUserFcmToken = onRequest(async (req, res) => {
 
     res.json({
       success: true,
-      message: 'FCM token updated successfully',
+      message: 'FCM token 更新成功',
     });
 
   } catch (error: any) {
     console.error('Error in updateMapUserFcmToken:', error);
     res.status(500).json({ 
       success: false, 
-      error: error.message || 'Internal server error' 
+      error: '伺服器內部錯誤',
+      errorCode: ErrorCodes.INTERNAL_ERROR,
     });
   }
 });

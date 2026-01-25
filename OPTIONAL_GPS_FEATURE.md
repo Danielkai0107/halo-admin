@@ -93,7 +93,7 @@ function determineLocation(gateway, uploadedLat?, uploadedLng?) {
 
 ---
 
-## 📱 Android App 實作建議
+## Android App 實作建議
 
 ### 智能判斷
 
@@ -174,7 +174,7 @@ fun uploadBeacons(gatewayId: String, beacons: List<Beacon>) {
 ├─ 名稱: 社區大門接收器
 ├─ 類型: GENERAL 或 BOUNDARY
 ├─ 位置: 社區正門
-├─ GPS 座標: ⭐ 重要
+├─ GPS 座標: 重要
 │   ├─ 緯度: 25.033964
 │   └─ 經度: 121.564468
 └─ 狀態: 啟用

@@ -61,8 +61,6 @@ export const ElderStatus = {
 // Device
 export interface Device {
   id: string;
-  tenantId?: string | null;
-  elderId?: string | null;
   // ✅ 核心識別欄位（用於 Beacon 識別）
   uuid: string;           // 必填 - 服務識別碼（所有同公司設備統一）
   major: number;          // 必填 - 群組編號（例如：社區/區域）
@@ -71,12 +69,29 @@ export interface Device {
   macAddress?: string;    // 選填 - Beacon MAC 會隨機變化，僅供參考
   deviceName?: string;
   type: DeviceType;
+  // 綁定狀態（新架構）
+  bindingType: DeviceBindingType;
+  boundTo: string | null;           // elderId 或 mapAppUserId
+  boundAt: string | null;
+  // 標籤（取代 tenantId）
+  tags: string[];                   // 例如：["tenant_id_1", "tenant_id_2"]
+  // 裝置狀態
   batteryLevel?: number;
   lastSeen?: string;
   lastRssi?: number;
   isActive: boolean;
   elder?: Elder;
 }
+
+// 裝置綁定類型
+export type DeviceBindingType = "ELDER" | "MAP_USER" | "UNBOUND" | "ANONYMOUS";
+
+export const DeviceBindingType = {
+  ELDER: "ELDER",
+  MAP_USER: "MAP_USER",
+  UNBOUND: "UNBOUND",
+  ANONYMOUS: "ANONYMOUS",
+} as const;
 
 export type DeviceType = "IBEACON" | "EDDYSTONE" | "GENERIC_BLE";
 
@@ -103,12 +118,13 @@ export interface Gateway {
   tenant?: Tenant;
 }
 
-export type GatewayType = "GENERAL" | "BOUNDARY" | "MOBILE";
+export type GatewayType = "SCHOOL_ZONE" | "SAFE_ZONE" | "OBSERVE_ZONE" | "INACTIVE";
 
 export const GatewayType = {
-  GENERAL: "GENERAL",
-  BOUNDARY: "BOUNDARY",
-  MOBILE: "MOBILE",
+  SCHOOL_ZONE: "SCHOOL_ZONE",
+  SAFE_ZONE: "SAFE_ZONE",
+  OBSERVE_ZONE: "OBSERVE_ZONE",
+  INACTIVE: "INACTIVE",
 } as const;
 
 // Alert

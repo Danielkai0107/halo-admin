@@ -148,8 +148,8 @@ export const AppUsersPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Line 好友成員</h1>
-          <p className="text-gray-600 mt-1">管理所有透過 LINE 加入的社區成員</p>
+          <h1 className="text-3xl font-bold text-gray-900">LINE 用戶管理</h1>
+          <p className="text-gray-600 mt-1">管理所有透過 LINE 加入的用戶（全局管理）</p>
         </div>
       </div>
 

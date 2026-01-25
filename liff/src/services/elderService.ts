@@ -2,9 +2,9 @@ import {
   query,
   where,
   orderBy,
+  limit,
   collection,
   getDocs,
-  Timestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import {
@@ -42,10 +42,19 @@ export const elderService = {
     return subscribeToCollection<Elder>('elders', constraints, callback);
   },
 
-  // 獲取單個長者
+  // 獲取單個長者（包含關聯設備資料）
   getOne: async (id: string) => {
     try {
       const elder = await getDocument<Elder>('elders', id);
+      
+      // 如果長者有綁定設備，載入設備資料
+      if (elder && elder.deviceId) {
+        const device = await getDocument<any>('devices', elder.deviceId);
+        if (device) {
+          elder.device = device;
+        }
+      }
+      
       return { data: elder };
     } catch (error) {
       console.error('Failed to get elder:', error);
@@ -53,24 +62,69 @@ export const elderService = {
     }
   },
 
-  // 獲取長者活動記錄（從 latest_locations/history 讀取）
+  // 獲取長者活動記錄（從設備的 activities 子集合讀取）
   getActivities: async (elderId: string, hours: number = 24) => {
     try {
+      // 先獲取長者資料以取得綁定的設備 ID
+      const elderDoc = await getDocument('elders', elderId);
+      const deviceId = (elderDoc as any)?.deviceId;
+      
+      if (!deviceId) {
+        console.log('Elder has no bound device, no activities to show');
+        return { data: [] };
+      }
+      
+      console.log(`Loading activities for elder ${elderId}, device ${deviceId}`);
+      
       const startTime = new Date();
       startTime.setHours(startTime.getHours() - hours);
       
+      // 從設備的子集合查詢活動記錄
       const activitiesQuery = query(
-        collection(db, 'latest_locations', elderId, 'history'),
-        where('timestamp', '>=', Timestamp.fromDate(startTime)),
-        orderBy('timestamp', 'desc')
+        collection(db, 'devices', deviceId, 'activities'),
+        orderBy('timestamp', 'desc'),
+        limit(100)
       );
       
       const activitiesSnap = await getDocs(activitiesQuery);
-      const activities = activitiesSnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Activity[];
+      console.log(`Found ${activitiesSnap.docs.length} total activities for device`);
+      
+      // 在客戶端過濾時間範圍和綁定類型
+      const activities = activitiesSnap.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            timestamp: data.timestamp,
+            gateway: data.gateway || {
+              name: data.gatewayName,
+              location: data.gatewayLocation,
+            },
+            latitude: data.latitude,
+            longitude: data.longitude,
+            rssi: data.rssi,
+            bindingType: data.bindingType,
+          };
+        })
+        .filter((activity: any) => {
+          // 只顯示 ELDER 類型的活動
+          if (activity.bindingType !== 'ELDER') return false;
+          
+          // 時間範圍過濾
+          let activityDate: Date;
+          const timestamp = activity.timestamp;
+          if (timestamp?.toDate && typeof timestamp.toDate === 'function') {
+            activityDate = timestamp.toDate();
+          } else if (timestamp?.seconds) {
+            activityDate = new Date(timestamp.seconds * 1000);
+          } else {
+            activityDate = new Date(timestamp);
+          }
+          
+          return activityDate >= startTime;
+        }) as Activity[];
 
+      console.log(`After filtering: ${activities.length} ELDER activities in time range`);
       return { data: activities };
     } catch (error) {
       console.error('Failed to get elder activities:', error);
@@ -120,21 +174,22 @@ export const elderService = {
     }
   },
 
-  // 獲取可用設備（該社區未綁定的設備）
+  // 獲取可用設備（該社區 tag 的未綁定設備）
   getAvailableDevices: async (tenantId: string) => {
     try {
+      // 使用新的資料結構：tags 陣列包含社區 ID，bindingType 為 UNBOUND
       const devicesQuery = query(
         collection(db, 'devices'),
-        where('tenantId', '==', tenantId)
+        where('tags', 'array-contains', tenantId),
+        where('bindingType', '==', 'UNBOUND')
       );
       
       const devicesSnap = await getDocs(devicesQuery);
-      const allDevices = devicesSnap.docs.map(doc => ({
+      const availableDevices = devicesSnap.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      const availableDevices = allDevices.filter((device: any) => !device.elderId);
       return { data: availableDevices };
     } catch (error) {
       console.error('Failed to get available devices:', error);

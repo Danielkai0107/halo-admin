@@ -21,6 +21,7 @@
 ### 2. 自動填入座標
 
 選擇地點後會自動執行：
+
 - ✅ 填入**名稱**欄位
 - ✅ 填入**緯度**（latitude）
 - ✅ 填入**經度**（longitude）
@@ -49,6 +50,7 @@
 `AIzaSyCdFLTXzYPQlYeBxZWaboqWYTJRDNsKydo`
 
 **啟用的 API:**
+
 - Places API
 - Maps JavaScript API
 
@@ -64,7 +66,7 @@ src/
 
 ---
 
-## 📱 使用方式
+## 使用方式
 
 ### 新增接收點
 
@@ -88,12 +90,14 @@ src/
 ### 搜尋提示
 
 **建議的搜尋方式:**
+
 - ✅ 使用完整地址：「台北市信義區信義路五段7號」
 - ✅ 使用地標名稱：「台北101」
 - ✅ 使用商家名稱：「全家便利商店 信義店」
 - ✅ 使用社區名稱：「大安國宅社區」
 
 **避免:**
+
 - ❌ 只輸入縣市名稱（太籠統）
 - ❌ 使用簡稱或縮寫
 
@@ -109,7 +113,7 @@ src/
 │ ┌─────────────────────────────────────┐ │
 │ │ [搜尋框 - Google Places]            │ │
 │ └─────────────────────────────────────┘ │
-│ 💡 使用 Google 地點搜尋，選擇後會自動  │
+│  使用 Google 地點搜尋，選擇後會自動  │
 │    帶入經緯度                           │
 └─────────────────────────────────────────┘
 
@@ -136,12 +140,14 @@ src/
 ### API Key 保護
 
 **目前狀態:**
+
 - API Key 寫在前端程式碼中
 - 建議透過 Firebase Console 設定 API Key 限制：
   - HTTP referrer 限制（只允許您的網域）
   - API 限制（只允許 Places API 和 Maps JavaScript API）
 
 **建議設定:**
+
 ```
 HTTP referrer:
 - https://safe-net-tw.web.app/*
@@ -152,10 +158,12 @@ HTTP referrer:
 ### 成本控制
 
 **Google Places API 計費:**
+
 - Autocomplete (per session): $0.00 - $0.017 per session
 - Place Details: $0.017 per request
 
 **建議措施:**
+
 - 在 Google Cloud Console 設定每日配額
 - 監控 API 使用量
 - 設定預算警報
@@ -168,15 +176,16 @@ HTTP referrer:
 
 ```typescript
 interface PlaceAutocompleteProps {
-  value: string;                    // 目前的輸入值
+  value: string; // 目前的輸入值
   onChange: (value: string) => void; // 輸入變更時的回呼
-  onPlaceSelected: (place: {        // 選擇地點後的回呼
+  onPlaceSelected: (place: {
+    // 選擇地點後的回呼
     name: string;
     lat: number;
     lng: number;
   }) => void;
-  placeholder?: string;              // 佔位符文字
-  className?: string;                // CSS 類別
+  placeholder?: string; // 佔位符文字
+  className?: string; // CSS 類別
 }
 ```
 
@@ -196,6 +205,7 @@ options={{
 ### Q1: 搜尋不到地點？
 
 **解決方法:**
+
 - 確認 Google Places API 已啟用
 - 檢查 API Key 是否有效
 - 確認網域已加入 HTTP referrer 白名單
@@ -203,6 +213,7 @@ options={{
 ### Q2: 選擇地點後座標沒有自動填入？
 
 **檢查項目:**
+
 - 打開瀏覽器 Console，查看是否有錯誤訊息
 - 確認 `handlePlaceSelected` 函數有被正確呼叫
 - 檢查 `setValue` 是否正確綁定到表單欄位

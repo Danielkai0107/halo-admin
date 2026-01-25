@@ -27,6 +27,22 @@ export interface LoginResponse {
   user: User;
 }
 
+// SaaS User (社區管理員 - Community Portal 使用)
+export interface SaasUser {
+  id: string;
+  firebaseUid: string;
+  email: string;
+  name: string;
+  phone?: string;
+  avatar?: string;
+  tenantId: string;
+  role: 'ADMIN' | 'MEMBER';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  tenant?: Tenant;
+}
+
 // Tenant
 export interface Tenant {
   id: string;
@@ -99,22 +115,31 @@ export interface BeaconUUID {
 // Device
 export interface Device {
   id: string;
-  tenantId: string | null;
-  elderId: string | null;
-  mapAppUserId?: string;  // 地圖 APP 用戶綁定
-  poolType?: PoolType;    // 設備池類型
-  // ✅ 核心識別欄位（用於 Beacon 識別）
+  // 核心識別欄位（用於 Beacon 識別）
   uuid: string;           // 必填 - 服務識別碼（所有同公司設備統一）
   major: number;          // 必填 - 群組編號（例如：社區/區域）
   minor: number;          // 必填 - 設備編號（每張卡片唯一）
-  // ⚠️ 輔助欄位
-  macAddress?: string;    // 選填 - Beacon MAC 會隨機變化，僅供參考
   deviceName?: string;
   type: DeviceType;
+  // 綁定狀態（統一管理）
+  bindingType: DeviceBindingType;
+  boundTo: string | null;           // elderId 或 mapAppUserId
+  boundAt: string | null;
+  // MAP 用戶專屬資料（只在 bindingType="MAP_USER" 時有值）
+  mapUserNickname?: string | null;
+  mapUserAge?: number | null;
+  mapUserGender?: 'MALE' | 'FEMALE' | 'OTHER' | null;
+  // 標籤（取代 tenantId）
+  tags: string[];                   // 例如：["tenant_dalove_001", "批次2024"]
+  // 輔助欄位
+  macAddress?: string;    // 選填 - Beacon MAC 會隨機變化，僅供參考
+  // 裝置狀態
   batteryLevel?: number;
   lastSeen?: string;
   lastRssi?: number;
   isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
   elder?: Elder;
 }
 
@@ -126,11 +151,39 @@ export const DeviceType = {
   GENERIC_BLE: "GENERIC_BLE",
 } as const;
 
+// 裝置綁定類型
+export type DeviceBindingType = "ELDER" | "MAP_USER" | "UNBOUND" | "ANONYMOUS";
+
+export const DeviceBindingType = {
+  ELDER: "ELDER",
+  MAP_USER: "MAP_USER",
+  UNBOUND: "UNBOUND",
+  ANONYMOUS: "ANONYMOUS",
+} as const;
+
+// 裝置活動記錄
+export interface DeviceActivity {
+  id: string;
+  timestamp: string;
+  gatewayId: string;
+  gatewayName: string;
+  gatewayType: GatewayType;
+  latitude: number;
+  longitude: number;
+  rssi: number;
+  bindingType: DeviceBindingType;
+  boundTo: string | null;
+  triggeredNotification: boolean;
+  notificationType: "LINE" | "FCM" | null;
+  notificationDetails?: any;
+  notificationPointId?: string;  // MAP_USER 專用：觸發通知的點位 ID
+  anonymizedAt?: string;  // 記錄匿名化時間
+}
+
 // Gateway
 export interface Gateway {
   id: string;
   tenantId: string | null;
-  poolType?: PoolType;     // 接收器池類型
   serialNumber: string;
   macAddress?: string;     // MAC Address for commercial receivers
   imei?: string;           // IMEI for mobile phones
@@ -144,12 +197,13 @@ export interface Gateway {
   tenant?: Tenant;
 }
 
-export type GatewayType = "GENERAL" | "BOUNDARY" | "MOBILE";
+export type GatewayType = "SCHOOL_ZONE" | "SAFE_ZONE" | "OBSERVE_ZONE" | "INACTIVE";
 
 export const GatewayType = {
-  GENERAL: "GENERAL",
-  BOUNDARY: "BOUNDARY",
-  MOBILE: "MOBILE",
+  SCHOOL_ZONE: "SCHOOL_ZONE",
+  SAFE_ZONE: "SAFE_ZONE",
+  OBSERVE_ZONE: "OBSERVE_ZONE",
+  INACTIVE: "INACTIVE",
 } as const;
 
 // Alert
@@ -241,14 +295,6 @@ export interface DashboardStats {
 // Map App 相關型別定義
 // ========================================
 
-// 設備池類型
-export type PoolType = "TENANT" | "PUBLIC";
-
-export const PoolType = {
-  TENANT: "TENANT",
-  PUBLIC: "PUBLIC",
-} as const;
-
 // 地圖 APP 用戶
 export interface MapAppUser {
   id: string;
@@ -256,10 +302,7 @@ export interface MapAppUser {
   name: string;
   phone?: string;
   avatar?: string;
-  boundDeviceId?: string;
-  boundAt?: string;
-  deviceNickname?: string;  // 設備暱稱（不與設備綁死）
-  deviceOwnerAge?: number;   // 使用者年齡（不與設備綁死）
+  boundDeviceId?: string;  // 雙向引用，方便查詢
   fcmToken?: string;
   notificationEnabled: boolean;
   isActive: boolean;
@@ -291,4 +334,25 @@ export interface MapUserActivity {
   longitude?: number;
   triggeredNotification?: boolean;
   notificationPointId?: string;
+}
+
+// 匿名活動記錄（解綁後的歷史記錄，用於統計分析）
+export interface AnonymousActivity {
+  id: string;
+  deviceId: string;              // 設備 ID
+  timestamp: string;             // 活動時間
+  gatewayId: string;             // 接收器 ID
+  gatewayName?: string;          // 接收器名稱
+  gatewayType?: GatewayType;     // 接收器類型
+  latitude?: number;             // 位置
+  longitude?: number;            // 位置
+  rssi?: number;                 // 信號強度
+  triggeredNotification?: boolean;
+  notificationType?: "LINE" | "FCM" | null;
+  notificationPointId?: string;
+  bindingType: "ANONYMOUS";      // 固定為 ANONYMOUS
+  boundTo: null;                 // 固定為 null
+  anonymizedAt: string;          // 匿名化時間
+  archiveSessionId: string;      // 歸檔批次 ID（同一次解綁的記錄會有相同的 ID）
+  originalActivityId?: string;   // 原始活動 ID（可選）
 }

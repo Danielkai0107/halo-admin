@@ -1,7 +1,14 @@
-import { useEffect, useState } from 'react';
-import { Users, Building2, Smartphone, Radio, Bell, Activity } from 'lucide-react';
-import { dashboardService } from '../services/dashboardService';
-import type { DashboardStats } from '../types';
+import { useEffect, useState } from "react";
+import {
+  Users,
+  Building2,
+  Smartphone,
+  Radio,
+  Bell,
+  Activity,
+} from "lucide-react";
+import { dashboardService } from "../services/dashboardService";
+import type { DashboardStats } from "../types";
 
 export const DashboardPage = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -16,7 +23,7 @@ export const DashboardPage = () => {
       const response: any = await dashboardService.getOverview();
       setStats(response.data);
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      console.error("Failed to load stats:", error);
     } finally {
       setLoading(false);
     }
@@ -32,42 +39,42 @@ export const DashboardPage = () => {
 
   const statCards = [
     {
-      title: '社區數量',
+      title: "社區數量",
       value: stats?.tenants.total || 0,
       icon: Building2,
-      color: 'bg-blue-500',
+      color: "bg-blue-500",
     },
     {
-      title: '長者總數',
+      title: "長者總數",
       value: stats?.elders.total || 0,
       subValue: `${stats?.elders.active || 0} 位活躍`,
       icon: Users,
-      color: 'bg-green-500',
+      color: "bg-green-500",
     },
     {
-      title: '設備總數',
+      title: "設備總數",
       value: stats?.devices.total || 0,
       icon: Smartphone,
-      color: 'bg-purple-500',
+      color: "bg-purple-500",
     },
     {
-      title: '接收點',
+      title: "接收點",
       value: stats?.gateways.total || 0,
       icon: Radio,
-      color: 'bg-yellow-500',
+      color: "bg-yellow-500",
     },
     {
-      title: '待處理警報',
+      title: "待處理警報",
       value: stats?.alerts.pending || 0,
       subValue: `今日 ${stats?.alerts.today || 0} 筆`,
       icon: Bell,
-      color: 'bg-red-500',
+      color: "bg-red-500",
     },
     {
-      title: '今日訊號',
+      title: "今日訊號",
       value: stats?.logs.today || 0,
       icon: Activity,
-      color: 'bg-indigo-500',
+      color: "bg-indigo-500",
     },
   ];
 
@@ -106,11 +113,11 @@ export const DashboardPage = () => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-600">API 狀態</span>
-            <span className="text-green-600 font-medium">● 正常運行</span>
+            <span className="text-green-600 font-medium"> 正常運行</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">資料庫</span>
-            <span className="text-green-600 font-medium">● 已連接</span>
+            <span className="text-green-600 font-medium"> 已連接</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">版本</span>

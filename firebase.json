@@ -16,6 +16,14 @@
         "destination": "/liff/index.html"
       },
       {
+        "source": "/community",
+        "destination": "/community/index.html"
+      },
+      {
+        "source": "/community/**",
+        "destination": "/community/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

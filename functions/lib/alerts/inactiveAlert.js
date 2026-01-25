@@ -164,7 +164,7 @@ exports.checkInactiveElders = functions.pubsub
                     const adminData = adminDoc.data();
                     const adminAppUserId = adminData.appUserId;
                     // Get admin's LINE user ID
-                    const appUserDoc = await db.collection('appUsers').doc(adminAppUserId).get();
+                    const appUserDoc = await db.collection('line_users').doc(adminAppUserId).get();
                     if (!appUserDoc.exists) {
                         continue;
                     }

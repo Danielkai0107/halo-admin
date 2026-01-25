@@ -60,7 +60,7 @@ exports.getTenantFollowers = functions.https.onCall(async (data, context) => {
         // LINE Messaging API 沒有直接獲取好友列表的 API
         // 方法：獲取所有啟用的 appUsers，然後使用該社區的 Channel Access Token 驗證他們是否是該社區的好友
         const appUsersSnap = await db
-            .collection('appUsers')
+            .collection('line_users')
             .where('isActive', '==', true)
             .get();
         const client = new bot_sdk_1.Client({

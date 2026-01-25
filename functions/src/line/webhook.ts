@@ -115,7 +115,7 @@ async function handleFollow(
 
     // 檢查用戶是否已存在
     const existingUserQuery = await db
-      .collection('appUsers')
+      .collection('line_users')
       .where('lineUserId', '==', lineUserId)
       .limit(1)
       .get();
@@ -139,7 +139,7 @@ async function handleFollow(
         updateData.joinedFromTenantId = matchedTenant.id;
       }
       
-      await db.collection('appUsers').doc(appUserId).update(updateData);
+      await db.collection('line_users').doc(appUserId).update(updateData);
     } else {
       // 創建新用戶記錄
       const userData: any = {
@@ -160,7 +160,7 @@ async function handleFollow(
         userData.joinedFromTenantId = matchedTenant.id;
       }
       
-      const docRef = await db.collection('appUsers').add(userData);
+      const docRef = await db.collection('line_users').add(userData);
       appUserId = docRef.id;
       console.log('New user created:', lineUserId, lineDisplayName, matchedTenant ? `from tenant ${matchedTenant.id}` : '');
     }
@@ -215,14 +215,14 @@ async function handleUnfollow(event: WebhookEvent) {
   try {
     // 找到用戶並標記為不活躍（不刪除，保留歷史記錄）
     const userQuery = await db
-      .collection('appUsers')
+      .collection('line_users')
       .where('lineUserId', '==', lineUserId)
       .limit(1)
       .get();
 
     if (!userQuery.empty) {
       const userId = userQuery.docs[0].id;
-      await db.collection('appUsers').doc(userId).update({
+      await db.collection('line_users').doc(userId).update({
         isActive: false,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
@@ -259,7 +259,7 @@ async function handlePostback(
 
     // 找到對應的 appUser
     const appUserQuery = await db
-      .collection('appUsers')
+      .collection('line_users')
       .where('lineUserId', '==', lineUserId)
       .limit(1)
       .get();
@@ -395,7 +395,7 @@ async function notifyAdmins(
     // 通知所有管理員
     const notifications = adminsQuery.docs.map(async (doc) => {
       const adminData = doc.data();
-      const adminUserDoc = await db.collection('appUsers').doc(adminData.appUserId).get();
+      const adminUserDoc = await db.collection('line_users').doc(adminData.appUserId).get();
       const adminUser = adminUserDoc.data();
 
       if (adminUser?.lineUserId && channelAccessToken) {

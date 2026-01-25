@@ -47,7 +47,7 @@ export const getServiceUuids = onRequest(
 
       // Get ALL active UUIDs
       const uuidsQuery = await db
-        .collection('beacon_uuids')
+        .collection('uuids')
         .where('isActive', '==', true)
         .get();
 

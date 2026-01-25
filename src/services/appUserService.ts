@@ -17,7 +17,7 @@ export const appUserService = {
     return new Promise(async (resolve, reject) => {
       try {
         const constraints = [orderBy('createdAt', 'desc')];
-        const allAppUsers = await getAllDocuments('appUsers', constraints);
+        const allAppUsers = await getAllDocuments('line_users', constraints);
         
         // 手動實現分頁
         const startIndex = (page - 1) * limit;
@@ -36,7 +36,7 @@ export const appUserService = {
   // 訂閱 App 用戶列表（即時監聽）
   subscribe: (callback: (data: any[]) => void) => {
     const constraints = [orderBy('createdAt', 'desc')];
-    return subscribeToCollection('appUsers', constraints, callback);
+    return subscribeToCollection('line_users', constraints, callback);
   },
 
   // 獲取所有啟用的用戶（用於選擇器）
@@ -48,7 +48,7 @@ export const appUserService = {
           where('isActive', '==', true),
           orderBy('name', 'asc'),
         ];
-        const appUsers = await getAllDocuments('appUsers', constraints);
+        const appUsers = await getAllDocuments('line_users', constraints);
         
         // 優先顯示 LINE OA 好友（有 lineUserId 的用戶）
         const sortedUsers = appUsers.sort((a: any, b: any) => {
@@ -71,7 +71,7 @@ export const appUserService = {
   getOne: (id: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        const appUser = await getDocument('appUsers', id);
+        const appUser = await getDocument('line_users', id);
         resolve({ data: appUser });
       } catch (error) {
         console.error('Failed to get app user:', error);
@@ -84,8 +84,8 @@ export const appUserService = {
   update: (id: string, data: any) => {
     return new Promise(async (resolve, reject) => {
       try {
-        await updateDocument('appUsers', id, data);
-        const appUser = await getDocument('appUsers', id);
+        await updateDocument('line_users', id, data);
+        const appUser = await getDocument('line_users', id);
         resolve({ data: appUser });
       } catch (error) {
         console.error('Failed to update app user:', error);
@@ -98,15 +98,15 @@ export const appUserService = {
   toggleActive: (id: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        const appUser = await getDocument('appUsers', id);
+        const appUser = await getDocument('line_users', id);
         if (!appUser) {
           throw new Error('App user not found');
         }
         
         const isActive = (appUser as any).isActive !== false;
-        await updateDocument('appUsers', id, { isActive: !isActive });
+        await updateDocument('line_users', id, { isActive: !isActive });
         
-        const updatedAppUser = await getDocument('appUsers', id);
+        const updatedAppUser = await getDocument('line_users', id);
         resolve({ data: updatedAppUser });
       } catch (error) {
         console.error('Failed to toggle app user active:', error);
@@ -119,7 +119,7 @@ export const appUserService = {
   delete: (id: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        await deleteDocument('appUsers', id);
+        await deleteDocument('line_users', id);
         resolve({ data: { success: true } });
       } catch (error) {
         console.error('Failed to delete app user:', error);

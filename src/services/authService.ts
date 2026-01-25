@@ -17,7 +17,7 @@ export const authService = {
       const firebaseUser = userCredential.user;
       
       // 從 Firestore 獲取用戶詳細資料
-      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      const userDoc = await getDoc(doc(db, 'admin_users', firebaseUser.uid));
       
       if (!userDoc.exists()) {
         throw new Error('用戶資料不存在');
@@ -58,7 +58,7 @@ export const authService = {
       throw new Error('未登入');
     }
     
-    const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+    const userDoc = await getDoc(doc(db, 'admin_users', currentUser.uid));
     if (!userDoc.exists()) {
       throw new Error('用戶資料不存在');
     }

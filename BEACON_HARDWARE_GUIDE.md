@@ -5,6 +5,7 @@
 ### 🎯 核心問題
 
 之前的系統設計有以下問題：
+
 1. ❌ 只用 UUID 查詢設備 → 無法區分多張卡片（如果統一設定同一個 UUID）
 2. ❌ MAC Address 為必填欄位 → Beacon MAC 會隨機變化，不可靠
 3. ❌ Major/Minor 為選填欄位 → 沒有用來做設備識別
@@ -16,48 +17,51 @@
 ```typescript
 // 修改前
 export interface Device {
-  macAddress: string;    // 必填 ❌
-  uuid?: string;         // 選填 ❌
-  major?: number;        // 選填 ❌
-  minor?: number;        // 選填 ❌
+  macAddress: string; // 必填 ❌
+  uuid?: string; // 選填 ❌
+  major?: number; // 選填 ❌
+  minor?: number; // 選填 ❌
 }
 
 // 修改後
 export interface Device {
-  uuid: string;          // 必填 ✅ - 服務識別碼（統一）
-  major: number;         // 必填 ✅ - 群組編號
-  minor: number;         // 必填 ✅ - 設備編號
-  macAddress?: string;   // 選填 ✅ - 僅供參考
+  uuid: string; // 必填 ✅ - 服務識別碼（統一）
+  major: number; // 必填 ✅ - 群組編號
+  minor: number; // 必填 ✅ - 設備編號
+  macAddress?: string; // 選填 ✅ - 僅供參考
 }
 ```
 
 #### 2. 後端查詢邏輯
 
 **修改前：**
+
 ```typescript
 // ❌ 只用 UUID 查詢（無法區分不同卡片）
 const deviceQuery = await db
-  .collection('devices')
-  .where('uuid', '==', beacon.uuid)
-  .where('isActive', '==', true)
+  .collection("devices")
+  .where("uuid", "==", beacon.uuid)
+  .where("isActive", "==", true)
   .limit(1)
   .get();
 ```
 
 **修改後：**
+
 ```typescript
 // ✅ 用 UUID + Major + Minor 組合查詢
 const deviceQuery = await db
-  .collection('devices')
-  .where('uuid', '==', beacon.uuid)
-  .where('major', '==', beacon.major)
-  .where('minor', '==', beacon.minor)
-  .where('isActive', '==', true)
+  .collection("devices")
+  .where("uuid", "==", beacon.uuid)
+  .where("major", "==", beacon.major)
+  .where("minor", "==", beacon.minor)
+  .where("isActive", "==", true)
   .limit(1)
   .get();
 ```
 
 修改位置：
+
 - ✅ `sendLineNotification()` - LINE 通知時的設備查詢
 - ✅ `createBoundaryAlert()` - 邊界警報時的設備查詢
 - ✅ `processBeacon()` - Beacon 數據處理時的設備查詢
@@ -65,16 +69,17 @@ const deviceQuery = await db
 #### 3. 設備服務更新
 
 新增 `getByMajorMinor()` 方法：
+
 ```typescript
 getByMajorMinor: async (uuid: string, major: number, minor: number) => {
   const devicesQuery = query(
-    collection(db, 'devices'),
-    where('uuid', '==', uuid),
-    where('major', '==', major),
-    where('minor', '==', minor)
+    collection(db, "devices"),
+    where("uuid", "==", uuid),
+    where("major", "==", major),
+    where("minor", "==", minor),
   );
   // ...
-}
+};
 ```
 
 #### 4. 前端表單驗證
@@ -89,9 +94,10 @@ getByMajorMinor: async (uuid: string, major: number, minor: number) => {
 
 ## 🔧 Minew MWC02 硬體設定指南
 
-### 📱 設定工具
+### 設定工具
 
 使用 **BeaconSET+** App（iOS / Android）
+
 - iOS: App Store 搜尋 "BeaconSET+"
 - Android: Google Play 搜尋 "BeaconSET+"
 
@@ -107,7 +113,8 @@ getByMajorMinor: async (uuid: string, major: number, minor: number) => {
 
 **用途：** 系統透過 UUID 識別「是否為我們公司的設備」
 
-**說明：** 
+**說明：**
+
 - 這是「通關密語」
 - 接收器只掃描此 UUID 的設備，過濾掉其他公司的 Beacon
 
@@ -137,7 +144,7 @@ getByMajorMinor: async (uuid: string, major: number, minor: number) => {
 
 **用途：** 代表「個人編號」
 
-**⭐ 重要：Major + Minor 組合才是設備的唯一識別碼**
+**重要：Major + Minor 組合才是設備的唯一識別碼**
 
 #### 4. Device Name（設備名稱）
 
@@ -209,21 +216,21 @@ getByMajorMinor: async (uuid: string, major: number, minor: number) => {
 
 ### 範例 1：大愛社區（10 位長者）
 
-| 長者 | UUID | Major | Minor | Device Name |
-|------|------|-------|-------|-------------|
-| 王奶奶 | E2C56DB5-... | 1 | 1001 | User_1001 |
-| 李爺爺 | E2C56DB5-... | 1 | 1002 | User_1002 |
-| 張奶奶 | E2C56DB5-... | 1 | 1003 | User_1003 |
-| 陳爺爺 | E2C56DB5-... | 1 | 1004 | User_1004 |
-| 林奶奶 | E2C56DB5-... | 1 | 1005 | User_1005 |
+| 長者   | UUID         | Major | Minor | Device Name |
+| ------ | ------------ | ----- | ----- | ----------- |
+| 王奶奶 | E2C56DB5-... | 1     | 1001  | User_1001   |
+| 李爺爺 | E2C56DB5-... | 1     | 1002  | User_1002   |
+| 張奶奶 | E2C56DB5-... | 1     | 1003  | User_1003   |
+| 陳爺爺 | E2C56DB5-... | 1     | 1004  | User_1004   |
+| 林奶奶 | E2C56DB5-... | 1     | 1005  | User_1005   |
 
 ### 範例 2：多社區部署
 
-| 社區 | UUID | Major | Minor 範圍 |
-|------|------|-------|------------|
-| 大愛社區 | E2C56DB5-... | 1 | 1001-1099 |
-| 博愛社區 | E2C56DB5-... | 2 | 2001-2099 |
-| 仁愛社區 | E2C56DB5-... | 3 | 3001-3099 |
+| 社區     | UUID         | Major | Minor 範圍 |
+| -------- | ------------ | ----- | ---------- |
+| 大愛社區 | E2C56DB5-... | 1     | 1001-1099  |
+| 博愛社區 | E2C56DB5-... | 2     | 2001-2099  |
+| 仁愛社區 | E2C56DB5-... | 3     | 3001-3099  |
 
 ---
 
@@ -254,18 +261,20 @@ Beacon 使用 **BLE 隱私保護機制**，MAC 地址會定期隨機變化（Ran
 ### 問題 1：系統顯示「找不到設備」
 
 **檢查清單：**
+
 1. ✅ 確認硬體的 UUID 與資料庫中的 UUID 一致
 2. ✅ 確認 Major 和 Minor 數值正確（數字要完全一致）
 3. ✅ 確認設備在資料庫中 `isActive: true`
 4. ✅ 確認接收器（Gateway）有正常運作
 
 **除錯指令：**
+
 ```typescript
 // 在瀏覽器 Console 測試
 const result = await deviceService.getByMajorMinor(
   "E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
   1,
-  1001
+  1001,
 );
 console.log(result);
 ```
@@ -273,6 +282,7 @@ console.log(result);
 ### 問題 2：Beacon 訊號收不到
 
 **檢查清單：**
+
 1. ✅ 確認 Beacon 電池有電
 2. ✅ 確認 Beacon 設定中的「廣播間隔」不要太長（建議 500ms-1000ms）
 3. ✅ 確認 Beacon 的「發射功率」足夠（建議 0dBm 或更高）
@@ -281,6 +291,7 @@ console.log(result);
 ### 問題 3：通知沒有發送
 
 **檢查清單：**
+
 1. ✅ 確認設備已綁定長者（`elderId` 不為 null）
 2. ✅ 確認長者資料存在
 3. ✅ 確認 LINE Channel 設定正確
@@ -325,11 +336,13 @@ Beacon 廣播訊號 (UUID + Major + Minor + RSSI)
 ## 📞 後續支援
 
 如有問題，請檢查：
+
 1. Firebase Functions 日誌
 2. 瀏覽器 Console 錯誤
 3. Firestore 資料庫內容
 
 **關鍵日誌訊息：**
+
 - `No active device found for UUID XXX, Major YYY, Minor ZZZ`
 - 表示資料庫中沒有對應的設備記錄
 

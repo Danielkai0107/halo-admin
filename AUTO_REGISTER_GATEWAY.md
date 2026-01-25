@@ -5,11 +5,13 @@
 ### 🎯 核心變更
 
 #### 1. **Gateway 自動註冊**
+
 - ✅ 接收器首次上傳時自動創建記錄
 - ✅ 不再返回 404 錯誤
 - ✅ 簡化部署流程
 
 #### 2. **TenantId 來源調整**
+
 - ❌ **修改前**：從 Gateway 的 tenantId 取得社區
 - ✅ **修改後**：從長者的 tenantId 取得社區
 
@@ -32,6 +34,7 @@
 ```
 
 **問題：**
+
 - Gateway 必須預先註冊
 - Gateway 必須關聯社區
 - 共用的 Gateway（手機）很難管理
@@ -46,7 +49,7 @@
 
 3. 查詢長者
 
-4. 從長者取得 tenantId ⭐ 關鍵
+4. 從長者取得 tenantId 關鍵
    └─ tenantId = null → ⚠️ 跳過通知
    └─ tenantId 存在 → ✅ 繼續
 
@@ -54,6 +57,7 @@
 ```
 
 **優點：**
+
 - ✅ 接收器無需預先註冊
 - ✅ 通知發送給正確的社區（基於長者）
 - ✅ 支援共用接收器（多社區）
@@ -70,30 +74,33 @@
 async function getOrCreateGateway(gatewayId, payload, db) {
   // 先嘗試查詢
   let gateway = await getGatewayInfo(gatewayId, db);
-  
+
   if (gateway) {
-    return gateway;  // 已存在，直接使用
+    return gateway; // 已存在，直接使用
   }
-  
+
   // 不存在，自動註冊
   console.log(`Auto-registering new gateway: ${gatewayId}`);
-  
+
   const newGateway = {
     serialNumber: gatewayId,
-    macAddress: gatewayId.includes(':') ? gatewayId : undefined,
-    imei: !gatewayId.includes(':') && gatewayId.length >= 10 ? gatewayId : undefined,
+    macAddress: gatewayId.includes(":") ? gatewayId : undefined,
+    imei:
+      !gatewayId.includes(":") && gatewayId.length >= 10
+        ? gatewayId
+        : undefined,
     name: `Auto-Gateway-${gatewayId.substring(0, 8)}`,
     location: `Auto-registered at ${new Date().toISOString()}`,
-    type: 'MOBILE',
+    type: "MOBILE",
     latitude: payload.lat,
     longitude: payload.lng,
-    tenantId: null,  // 不關聯特定社區
+    tenantId: null, // 不關聯特定社區
     isActive: true,
     createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
+    updatedAt: serverTimestamp(),
   };
-  
-  await db.collection('gateways').add(newGateway);
+
+  await db.collection("gateways").add(newGateway);
   return newGateway;
 }
 ```
@@ -102,7 +109,7 @@ async function getOrCreateGateway(gatewayId, payload, db) {
 
 ```typescript
 // 根據 gateway_id 格式自動判斷
-if (gatewayId.includes(':')) {
+if (gatewayId.includes(":")) {
   // 包含冒號 → MAC Address
   macAddress = gatewayId;
   // 例如：AA:BB:CC:DD:EE:FF
@@ -145,10 +152,11 @@ if (gatewayId.includes(':')) {
 ### 處理結果
 
 #### Gateway 處理：
+
 ```
 1. 查詢 gateway_id = "ANDROID-42ec6a54d319eb84"
    └─ 找不到 → 自動註冊
-   
+
 2. 創建 Gateway 記錄：
    {
      serialNumber: "ANDROID-42ec6a54d319eb84",
@@ -160,11 +168,12 @@ if (gatewayId.includes(':')) {
      tenantId: null,
      isActive: true
    }
-   
+
 ✅ 不再返回 404 錯誤
 ```
 
 #### Beacon 1 處理（1-1001）：
+
 ```
 1. 查詢設備：
    WHERE uuid = "FDA50693-A4E2-4FB1-AFCF-C6EB01234567"
@@ -182,6 +191,7 @@ if (gatewayId.includes(':')) {
 ```
 
 #### Beacon 2 處理（2-2001）：
+
 ```
 相同邏輯處理
 ```
@@ -200,6 +210,7 @@ if (gatewayId.includes(':')) {
 ```
 
 **關鍵差異：**
+
 - ❌ **刪除**：Gateway 必須有 tenantId
 - ✅ **新增**：從長者的 tenantId 取得社區
 
@@ -230,6 +241,7 @@ tenants/tenant_dalove_001
 ```
 
 **結果：✅ 會觸發通知**
+
 - 發送給「大愛社區」的所有成員
 - 通知內容：「王奶奶 今日首次活動」
 
@@ -247,6 +259,7 @@ devices/{deviceId}
 ```
 
 **結果：⚠️ 不會觸發通知**
+
 - 日誌：`Device has no associated elder, skipping location update`
 - 返回：`status: 'ignored'`
 
@@ -266,6 +279,7 @@ elders/elder_wang_001
 ```
 
 **結果：⚠️ 不會觸發通知**
+
 - 位置會更新
 - 但不發送通知
 - 日誌：`Elder has no associated tenant, skipping notification`
@@ -282,6 +296,7 @@ Minor: 1001
 ```
 
 **結果：⚠️ 完全忽略**
+
 - 日誌：`No active device found for UUID..., Major..., Minor...`
 - 返回：`status: 'ignored'`
 
@@ -326,6 +341,7 @@ tenants/{tenantId}
 要確認你的資料能否觸發通知，請檢查：
 
 **Firestore Console:**
+
 ```
 https://console.firebase.google.com/project/safe-net-tw/firestore
 
@@ -334,11 +350,11 @@ https://console.firebase.google.com/project/safe-net-tw/firestore
    - 搜尋 uuid: FDA50693-A4E2-4FB1-AFCF-C6EB01234567
    - 確認 major: 1, minor: 1001
    - 確認有 elderId
-   
+
 2. elders 集合
    - 打開上面找到的 elderId
    - 確認有 tenantId
-   
+
 3. tenants 集合
    - 打開上面找到的 tenantId
    - 確認有 lineChannelAccessToken
@@ -393,6 +409,7 @@ curl -X POST https://receivebeacondata-kmzfyt3t5a-uc.a.run.app \
 ### 步驟 3：檢查結果
 
 **Functions 日誌：**
+
 ```
 https://console.firebase.google.com/project/safe-net-tw/functions/logs
 
@@ -405,15 +422,17 @@ https://console.firebase.google.com/project/safe-net-tw/functions/logs
 ```
 
 **LINE App：**
+
 - 檢查是否收到通知
 
 ---
 
-## ⭐ 核心改進說明
+## 核心改進說明
 
 ### 為什麼從長者取得 tenantId 更合理？
 
 #### 舊方式的問題：
+
 ```
 Gateway (手機 A) → tenantId: 大愛社區
   ├─ 掃描到王奶奶（大愛社區）✅ 正確
@@ -422,6 +441,7 @@ Gateway (手機 A) → tenantId: 大愛社區
 ```
 
 #### 新方式的優點：
+
 ```
 Gateway (手機 A) → tenantId: null（不關聯任何社區）
   ├─ 掃描到王奶奶
@@ -433,7 +453,7 @@ Gateway (手機 A) → tenantId: null（不關聯任何社區）
       └─ ✅ 發送給博愛社區
 ```
 
-**⭐ 支援一個接收器服務多個社區！**
+**支援一個接收器服務多個社區！**
 
 ---
 

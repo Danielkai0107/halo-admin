@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Tag } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { uuidService } from '../services/uuidService';
-import type { BeaconUUID } from '../types';
-import { Modal } from '../components/Modal';
-import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useEffect, useState } from "react";
+import { Plus, Edit, Trash2, Tag } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { uuidService } from "../services/uuidService";
+import type { BeaconUUID } from "../types";
+import { Modal } from "../components/Modal";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 export const UUIDsPage = () => {
   const [uuids, setUuids] = useState<BeaconUUID[]>([]);
@@ -13,7 +13,12 @@ export const UUIDsPage = () => {
   const [editingUuid, setEditingUuid] = useState<BeaconUUID | null>(null);
   const [deletingUuid, setDeletingUuid] = useState<BeaconUUID | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
 
   useEffect(() => {
     const unsubscribe = uuidService.subscribe((data) => {
@@ -27,9 +32,9 @@ export const UUIDsPage = () => {
   const handleCreate = () => {
     setEditingUuid(null);
     reset({
-      name: '',
-      uuid: '',
-      description: '',
+      name: "",
+      uuid: "",
+      description: "",
       isActive: true,
     });
     setShowModal(true);
@@ -40,7 +45,7 @@ export const UUIDsPage = () => {
     reset({
       name: uuid.name,
       uuid: uuid.uuid,
-      description: uuid.description || '',
+      description: uuid.description || "",
       isActive: uuid.isActive,
     });
     setShowModal(true);
@@ -50,14 +55,14 @@ export const UUIDsPage = () => {
     try {
       if (editingUuid) {
         await uuidService.update(editingUuid.id, data);
-        alert('更新成功');
+        alert("更新成功");
       } else {
         await uuidService.create(data);
-        alert('新增成功');
+        alert("新增成功");
       }
       setShowModal(false);
     } catch (error: any) {
-      alert(error.response?.data?.message || '操作失敗');
+      alert(error.response?.data?.message || "操作失敗");
     }
   };
 
@@ -70,10 +75,10 @@ export const UUIDsPage = () => {
 
     try {
       await uuidService.delete(deletingUuid.id);
-      alert('刪除成功');
+      alert("刪除成功");
       setDeletingUuid(null);
     } catch (error: any) {
-      alert(error.response?.data?.message || '刪除失敗');
+      alert(error.response?.data?.message || "刪除失敗");
     }
   };
 
@@ -103,10 +108,13 @@ export const UUIDsPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">UUID 管理</h1>
           <p className="text-gray-600 mt-1">管理 Beacon 服務識別碼（UUID）</p>
           <p className="text-sm text-blue-600 mt-1">
-            💡 統一管理公司使用的 UUID，方便在設備管理中選擇
+            統一管理公司使用的 UUID，方便在設備管理中選擇
           </p>
         </div>
-        <button onClick={handleCreate} className="btn-primary flex items-center space-x-2">
+        <button
+          onClick={handleCreate}
+          className="btn-primary flex items-center space-x-2"
+        >
           <Plus className="w-5 h-5" />
           <span>新增 UUID</span>
         </button>
@@ -118,11 +126,21 @@ export const UUIDsPage = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">名稱</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">UUID</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">說明</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">狀態</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">操作</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  名稱
+                </th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  UUID
+                </th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  說明
+                </th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  狀態
+                </th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -134,11 +152,16 @@ export const UUIDsPage = () => {
                 </tr>
               ) : (
                 uuids.map((uuid) => (
-                  <tr key={uuid.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <tr
+                    key={uuid.id}
+                    className="border-b border-gray-100 hover:bg-gray-50"
+                  >
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">
                         <Tag className="w-4 h-4 text-blue-600" />
-                        <span className="font-medium text-gray-900">{uuid.name}</span>
+                        <span className="font-medium text-gray-900">
+                          {uuid.name}
+                        </span>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -147,7 +170,7 @@ export const UUIDsPage = () => {
                       </code>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-600">
-                      {uuid.description || '-'}
+                      {uuid.description || "-"}
                     </td>
                     <td className="py-3 px-4">
                       {getStatusBadge(uuid.isActive)}
@@ -179,62 +202,77 @@ export const UUIDsPage = () => {
       </div>
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingUuid ? '編輯 UUID' : '新增 UUID'}>
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingUuid ? "編輯 UUID" : "新增 UUID"}
+      >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="label">名稱 *</label>
-            <input 
-              {...register('name', { required: true })} 
-              className="input" 
-              placeholder="例如：公司主要 UUID" 
+            <input
+              {...register("name", { required: true })}
+              className="input"
+              placeholder="例如：公司主要 UUID"
             />
-            {errors.name && <p className="text-sm text-red-600 mt-1">請輸入名稱</p>}
+            {errors.name && (
+              <p className="text-sm text-red-600 mt-1">請輸入名稱</p>
+            )}
           </div>
 
           <div>
             <label className="label">UUID *</label>
-            <input 
-              {...register('uuid', { 
+            <input
+              {...register("uuid", {
                 required: true,
                 pattern: {
-                  value: /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-                  message: 'UUID 格式不正確'
-                }
-              })} 
-              className="input font-mono text-sm" 
-              placeholder="E2C56DB5-DFFB-48D2-B060-D0F5A71096E0" 
+                  value:
+                    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+                  message: "UUID 格式不正確",
+                },
+              })}
+              className="input font-mono text-sm"
+              placeholder="E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"
             />
             {errors.uuid && (
               <p className="text-sm text-red-600 mt-1">
-                {errors.uuid.message as string || '請輸入 UUID'}
+                {(errors.uuid.message as string) || "請輸入 UUID"}
               </p>
             )}
-            <p className="text-xs text-gray-500 mt-1">格式：XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX</p>
+            <p className="text-xs text-gray-500 mt-1">
+              格式：XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+            </p>
           </div>
 
           <div>
             <label className="label">說明</label>
-            <textarea 
-              {...register('description')} 
-              className="input" 
+            <textarea
+              {...register("description")}
+              className="input"
               rows={3}
               placeholder="例如：用於所有工卡型 Beacon"
             />
           </div>
 
           <div className="flex items-center space-x-2">
-            <input 
-              type="checkbox" 
-              {...register('isActive')} 
+            <input
+              type="checkbox"
+              {...register("isActive")}
               className="rounded border-gray-300"
             />
             <label className="text-sm text-gray-700">啟用</label>
           </div>
 
           <div className="flex items-center justify-end space-x-3 pt-4 border-t">
-            <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">取消</button>
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className="btn-secondary"
+            >
+              取消
+            </button>
             <button type="submit" className="btn-primary">
-              {editingUuid ? '更新' : '新增'}
+              {editingUuid ? "更新" : "新增"}
             </button>
           </div>
         </form>

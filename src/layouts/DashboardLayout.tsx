@@ -2,8 +2,8 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { 
   Home, Users, Smartphone, Radio, Bell, 
-  LayoutDashboard, LogOut, Building2, UserCog, UserCircle, TestTube, Tag,
-  ChevronLeft, ChevronRight
+  LayoutDashboard, LogOut, Building2, UserCog, TestTube, Tag,
+  ChevronLeft, ChevronRight, MapPin, Shield
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,7 +27,7 @@ export const DashboardLayout = () => {
     { type: 'divider' as const },
     { path: '/tenants', icon: Building2, label: '社區管理' },
     { path: '/elders', icon: Users, label: '長者管理' },
-    { path: '/app-users', icon: UserCircle, label: 'Line 好友成員' },
+    { path: '/map-app-users', icon: MapPin, label: '地圖 App 用戶' },
     { type: 'divider' as const },
     { path: '/uuids', icon: Tag, label: 'UUID 管理' },
     { path: '/devices', icon: Smartphone, label: 'Beacon 管理' },
@@ -37,6 +37,7 @@ export const DashboardLayout = () => {
     { type: 'divider' as const },
     { path: '/beacon-test', icon: TestTube, label: 'Line 通知測試' },
     { path: '/users', icon: UserCog, label: '系統人員管理' },
+    { path: '/saas-users', icon: Shield, label: 'SaaS 用戶管理' },
   ];
 
   return (

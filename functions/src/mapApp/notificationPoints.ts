@@ -1,6 +1,17 @@
 import * as admin from 'firebase-admin';
 import { onRequest } from 'firebase-functions/v2/https';
 
+// 標準錯誤碼定義
+const ErrorCodes = {
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+  GATEWAY_NOT_FOUND: 'GATEWAY_NOT_FOUND',
+  NOTIFICATION_POINT_NOT_FOUND: 'NOTIFICATION_POINT_NOT_FOUND',
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  ACCOUNT_DELETED: 'ACCOUNT_DELETED',
+} as const;
+
 interface AddNotificationPointRequest {
   userId: string;
   gatewayId: string;
@@ -35,7 +46,11 @@ export const addMapUserNotificationPoint = onRequest(async (req, res) => {
   }
 
   if (req.method !== 'POST') {
-    res.status(405).json({ success: false, error: 'Method not allowed' });
+    res.status(405).json({ 
+      success: false, 
+      error: '不支援此請求方法',
+      errorCode: ErrorCodes.VALIDATION_ERROR,
+    });
     return;
   }
 
@@ -43,21 +58,52 @@ export const addMapUserNotificationPoint = onRequest(async (req, res) => {
     // Verify Firebase ID Token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ success: false, error: 'Unauthorized' });
+      res.status(401).json({ 
+        success: false, 
+        error: '未授權：缺少或無效的認證令牌',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
       return;
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (tokenError) {
+      res.status(401).json({ 
+        success: false, 
+        error: '未授權：認證令牌無效或已過期',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
+      return;
+    }
+    
     const authenticatedUserId = decodedToken.uid;
 
     const body: AddNotificationPointRequest = req.body;
 
     // Validate request
-    if (!body.userId || !body.gatewayId || !body.name) {
+    const validationErrors: Record<string, string> = {};
+    
+    if (!body.userId) {
+      validationErrors.userId = '缺少必填欄位 userId';
+    }
+    if (!body.gatewayId) {
+      validationErrors.gatewayId = '缺少必填欄位 gatewayId';
+    }
+    if (!body.name) {
+      validationErrors.name = '缺少必填欄位 name';
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
       res.status(400).json({ 
         success: false, 
-        error: 'Missing required fields: userId, gatewayId, name' 
+        error: '參數驗證失敗',
+        errorCode: ErrorCodes.VALIDATION_ERROR,
+        errorDetails: {
+          fields: validationErrors
+        }
       });
       return;
     }
@@ -66,7 +112,8 @@ export const addMapUserNotificationPoint = onRequest(async (req, res) => {
     if (body.userId !== authenticatedUserId) {
       res.status(403).json({ 
         success: false, 
-        error: 'Forbidden' 
+        error: '禁止操作：無法為其他用戶新增通知點位',
+        errorCode: ErrorCodes.UNAUTHORIZED,
       });
       return;
     }
@@ -74,16 +121,36 @@ export const addMapUserNotificationPoint = onRequest(async (req, res) => {
     const db = admin.firestore();
 
     // Verify user exists
-    const userDoc = await db.collection('mapAppUsers').doc(body.userId).get();
+    const userDoc = await db.collection('app_users').doc(body.userId).get();
     if (!userDoc.exists) {
-      res.status(404).json({ success: false, error: 'User not found' });
+      res.status(404).json({ 
+        success: false, 
+        error: '帳號不存在或已被刪除',
+        errorCode: ErrorCodes.USER_NOT_FOUND,
+      });
+      return;
+    }
+
+    const userData = userDoc.data();
+
+    // 檢查用戶是否已被刪除標記
+    if (userData?.isDeleted) {
+      res.status(410).json({ 
+        success: false, 
+        error: '帳號已被刪除',
+        errorCode: ErrorCodes.ACCOUNT_DELETED,
+      });
       return;
     }
 
     // Verify gateway exists (allow both public and tenant gateways)
     const gatewayDoc = await db.collection('gateways').doc(body.gatewayId).get();
     if (!gatewayDoc.exists) {
-      res.status(404).json({ success: false, error: 'Gateway not found' });
+      res.status(404).json({ 
+        success: false, 
+        error: '接收器不存在',
+        errorCode: ErrorCodes.GATEWAY_NOT_FOUND,
+      });
       return;
     }
     
@@ -99,7 +166,7 @@ export const addMapUserNotificationPoint = onRequest(async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    const docRef = await db.collection('mapUserNotificationPoints').add(notificationPoint);
+    const docRef = await db.collection('appUserNotificationPoints').add(notificationPoint);
 
     res.json({
       success: true,
@@ -114,7 +181,8 @@ export const addMapUserNotificationPoint = onRequest(async (req, res) => {
     console.error('Error in addMapUserNotificationPoint:', error);
     res.status(500).json({ 
       success: false, 
-      error: error.message || 'Internal server error' 
+      error: '伺服器內部錯誤',
+      errorCode: ErrorCodes.INTERNAL_ERROR,
     });
   }
 });
@@ -135,7 +203,11 @@ export const getMapUserNotificationPoints = onRequest(async (req, res) => {
   }
 
   if (req.method !== 'GET') {
-    res.status(405).json({ success: false, error: 'Method not allowed' });
+    res.status(405).json({ 
+      success: false, 
+      error: '不支援此請求方法',
+      errorCode: ErrorCodes.VALIDATION_ERROR,
+    });
     return;
   }
 
@@ -143,12 +215,27 @@ export const getMapUserNotificationPoints = onRequest(async (req, res) => {
     // Verify Firebase ID Token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ success: false, error: 'Unauthorized' });
+      res.status(401).json({ 
+        success: false, 
+        error: '未授權：缺少或無效的認證令牌',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
       return;
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (tokenError) {
+      res.status(401).json({ 
+        success: false, 
+        error: '未授權：認證令牌無效或已過期',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
+      return;
+    }
+    
     const authenticatedUserId = decodedToken.uid;
 
     const userId = req.query.userId as string;
@@ -156,22 +243,55 @@ export const getMapUserNotificationPoints = onRequest(async (req, res) => {
     if (!userId) {
       res.status(400).json({ 
         success: false, 
-        error: 'Missing required query parameter: userId' 
+        error: '參數驗證失敗',
+        errorCode: ErrorCodes.VALIDATION_ERROR,
+        errorDetails: {
+          fields: {
+            userId: '缺少必填參數 userId'
+          }
+        }
       });
       return;
     }
 
     // Verify user can only access their own notification points
     if (userId !== authenticatedUserId) {
-      res.status(403).json({ success: false, error: 'Forbidden' });
+      res.status(403).json({ 
+        success: false, 
+        error: '禁止操作：無法查看其他用戶的通知點位',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
       return;
     }
 
     const db = admin.firestore();
 
+    // Verify user exists
+    const userDoc = await db.collection('app_users').doc(userId).get();
+    if (!userDoc.exists) {
+      res.status(404).json({ 
+        success: false, 
+        error: '帳號不存在或已被刪除',
+        errorCode: ErrorCodes.USER_NOT_FOUND,
+      });
+      return;
+    }
+
+    const userData = userDoc.data();
+
+    // 檢查用戶是否已被刪除標記
+    if (userData?.isDeleted) {
+      res.status(410).json({ 
+        success: false, 
+        error: '帳號已被刪除',
+        errorCode: ErrorCodes.ACCOUNT_DELETED,
+      });
+      return;
+    }
+
     // Get notification points
     const pointsSnapshot = await db
-      .collection('mapUserNotificationPoints')
+      .collection('appUserNotificationPoints')
       .where('mapAppUserId', '==', userId)
       .orderBy('createdAt', 'desc')
       .get();
@@ -218,7 +338,8 @@ export const getMapUserNotificationPoints = onRequest(async (req, res) => {
     console.error('Error in getMapUserNotificationPoints:', error);
     res.status(500).json({ 
       success: false, 
-      error: error.message || 'Internal server error' 
+      error: '伺服器內部錯誤',
+      errorCode: ErrorCodes.INTERNAL_ERROR,
     });
   }
 });
@@ -239,7 +360,11 @@ export const updateMapUserNotificationPoint = onRequest(async (req, res) => {
   }
 
   if (req.method !== 'PUT') {
-    res.status(405).json({ success: false, error: 'Method not allowed' });
+    res.status(405).json({ 
+      success: false, 
+      error: '不支援此請求方法',
+      errorCode: ErrorCodes.VALIDATION_ERROR,
+    });
     return;
   }
 
@@ -247,12 +372,27 @@ export const updateMapUserNotificationPoint = onRequest(async (req, res) => {
     // Verify Firebase ID Token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ success: false, error: 'Unauthorized' });
+      res.status(401).json({ 
+        success: false, 
+        error: '未授權：缺少或無效的認證令牌',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
       return;
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (tokenError) {
+      res.status(401).json({ 
+        success: false, 
+        error: '未授權：認證令牌無效或已過期',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
+      return;
+    }
+    
     const authenticatedUserId = decodedToken.uid;
 
     const body: UpdateNotificationPointRequest = req.body;
@@ -260,7 +400,13 @@ export const updateMapUserNotificationPoint = onRequest(async (req, res) => {
     if (!body.pointId) {
       res.status(400).json({ 
         success: false, 
-        error: 'Missing required field: pointId' 
+        error: '參數驗證失敗',
+        errorCode: ErrorCodes.VALIDATION_ERROR,
+        errorDetails: {
+          fields: {
+            pointId: '缺少必填欄位 pointId'
+          }
+        }
       });
       return;
     }
@@ -268,9 +414,13 @@ export const updateMapUserNotificationPoint = onRequest(async (req, res) => {
     const db = admin.firestore();
 
     // Get notification point
-    const pointDoc = await db.collection('mapUserNotificationPoints').doc(body.pointId).get();
+    const pointDoc = await db.collection('appUserNotificationPoints').doc(body.pointId).get();
     if (!pointDoc.exists) {
-      res.status(404).json({ success: false, error: 'Notification point not found' });
+      res.status(404).json({ 
+        success: false, 
+        error: '通知點位不存在',
+        errorCode: ErrorCodes.NOTIFICATION_POINT_NOT_FOUND,
+      });
       return;
     }
 
@@ -278,7 +428,32 @@ export const updateMapUserNotificationPoint = onRequest(async (req, res) => {
 
     // Verify ownership
     if (pointData?.mapAppUserId !== authenticatedUserId) {
-      res.status(403).json({ success: false, error: 'Forbidden' });
+      res.status(403).json({ 
+        success: false, 
+        error: '禁止操作：無法修改其他用戶的通知點位',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
+      return;
+    }
+
+    // Verify user still exists and is active
+    const userDoc = await db.collection('app_users').doc(authenticatedUserId).get();
+    if (!userDoc.exists) {
+      res.status(404).json({ 
+        success: false, 
+        error: '帳號不存在或已被刪除',
+        errorCode: ErrorCodes.USER_NOT_FOUND,
+      });
+      return;
+    }
+
+    const userData = userDoc.data();
+    if (userData?.isDeleted) {
+      res.status(410).json({ 
+        success: false, 
+        error: '帳號已被刪除',
+        errorCode: ErrorCodes.ACCOUNT_DELETED,
+      });
       return;
     }
 
@@ -291,23 +466,30 @@ export const updateMapUserNotificationPoint = onRequest(async (req, res) => {
     if (Object.keys(updateData).length === 0) {
       res.status(400).json({ 
         success: false, 
-        error: 'No fields to update' 
+        error: '參數驗證失敗',
+        errorCode: ErrorCodes.VALIDATION_ERROR,
+        errorDetails: {
+          fields: {
+            _general: '至少需要提供一個要更新的欄位'
+          }
+        }
       });
       return;
     }
 
-    await db.collection('mapUserNotificationPoints').doc(body.pointId).update(updateData);
+    await db.collection('appUserNotificationPoints').doc(body.pointId).update(updateData);
 
     res.json({
       success: true,
-      message: 'Notification point updated successfully',
+      message: '通知點位更新成功',
     });
 
   } catch (error: any) {
     console.error('Error in updateMapUserNotificationPoint:', error);
     res.status(500).json({ 
       success: false, 
-      error: error.message || 'Internal server error' 
+      error: '伺服器內部錯誤',
+      errorCode: ErrorCodes.INTERNAL_ERROR,
     });
   }
 });
@@ -328,7 +510,11 @@ export const removeMapUserNotificationPoint = onRequest(async (req, res) => {
   }
 
   if (req.method !== 'DELETE' && req.method !== 'POST') {
-    res.status(405).json({ success: false, error: 'Method not allowed' });
+    res.status(405).json({ 
+      success: false, 
+      error: '不支援此請求方法',
+      errorCode: ErrorCodes.VALIDATION_ERROR,
+    });
     return;
   }
 
@@ -336,12 +522,27 @@ export const removeMapUserNotificationPoint = onRequest(async (req, res) => {
     // Verify Firebase ID Token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ success: false, error: 'Unauthorized' });
+      res.status(401).json({ 
+        success: false, 
+        error: '未授權：缺少或無效的認證令牌',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
       return;
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (tokenError) {
+      res.status(401).json({ 
+        success: false, 
+        error: '未授權：認證令牌無效或已過期',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
+      return;
+    }
+    
     const authenticatedUserId = decodedToken.uid;
 
     const body: RemoveNotificationPointRequest = req.body;
@@ -349,7 +550,13 @@ export const removeMapUserNotificationPoint = onRequest(async (req, res) => {
     if (!body.pointId) {
       res.status(400).json({ 
         success: false, 
-        error: 'Missing required field: pointId' 
+        error: '參數驗證失敗',
+        errorCode: ErrorCodes.VALIDATION_ERROR,
+        errorDetails: {
+          fields: {
+            pointId: '缺少必填欄位 pointId'
+          }
+        }
       });
       return;
     }
@@ -357,9 +564,13 @@ export const removeMapUserNotificationPoint = onRequest(async (req, res) => {
     const db = admin.firestore();
 
     // Get notification point
-    const pointDoc = await db.collection('mapUserNotificationPoints').doc(body.pointId).get();
+    const pointDoc = await db.collection('appUserNotificationPoints').doc(body.pointId).get();
     if (!pointDoc.exists) {
-      res.status(404).json({ success: false, error: 'Notification point not found' });
+      res.status(404).json({ 
+        success: false, 
+        error: '通知點位不存在',
+        errorCode: ErrorCodes.NOTIFICATION_POINT_NOT_FOUND,
+      });
       return;
     }
 
@@ -367,23 +578,28 @@ export const removeMapUserNotificationPoint = onRequest(async (req, res) => {
 
     // Verify ownership
     if (pointData?.mapAppUserId !== authenticatedUserId) {
-      res.status(403).json({ success: false, error: 'Forbidden' });
+      res.status(403).json({ 
+        success: false, 
+        error: '禁止操作：無法刪除其他用戶的通知點位',
+        errorCode: ErrorCodes.UNAUTHORIZED,
+      });
       return;
     }
 
     // Delete notification point
-    await db.collection('mapUserNotificationPoints').doc(body.pointId).delete();
+    await db.collection('appUserNotificationPoints').doc(body.pointId).delete();
 
     res.json({
       success: true,
-      message: 'Notification point removed successfully',
+      message: '通知點位刪除成功',
     });
 
   } catch (error: any) {
     console.error('Error in removeMapUserNotificationPoint:', error);
     res.status(500).json({ 
       success: false, 
-      error: error.message || 'Internal server error' 
+      error: '伺服器內部錯誤',
+      errorCode: ErrorCodes.INTERNAL_ERROR,
     });
   }
 });

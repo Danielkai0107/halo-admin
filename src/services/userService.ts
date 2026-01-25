@@ -26,7 +26,7 @@ export const userService = {
         
         constraints.push(orderBy('createdAt', 'desc'));
         
-        const allUsers = await getAllDocuments<User>('users', constraints);
+        const allUsers = await getAllDocuments<User>('admin_users', constraints);
         
         // 手動實現分頁
         const startIndex = (page - 1) * limit;
@@ -52,14 +52,14 @@ export const userService = {
     
     constraints.push(orderBy('createdAt', 'desc'));
     
-    return subscribeToCollection<User>('users', constraints, callback);
+    return subscribeToCollection<User>('admin_users', constraints, callback);
   },
 
   // 獲取單個用戶
   getOne: (id: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        const user = await getDocument<User>('users', id);
+        const user = await getDocument<User>('admin_users', id);
         resolve({ data: user });
       } catch (error) {
         console.error('Failed to get user:', error);
@@ -74,7 +74,7 @@ export const userService = {
       try {
         // 在實際應用中，應該先在 Firebase Auth 創建用戶
         // 然後使用返回的 UID 作為文檔 ID
-        const id = await createDocument('users', {
+        const id = await createDocument('admin_users', {
           email: data.email,
           name: data.name,
           role: data.role || 'STAFF',
@@ -83,7 +83,7 @@ export const userService = {
           avatar: data.avatar,
           isActive: true,
         });
-        const user = await getDocument<User>('users', id);
+        const user = await getDocument<User>('admin_users', id);
         resolve({ data: user });
       } catch (error) {
         console.error('Failed to create user:', error);
@@ -96,8 +96,8 @@ export const userService = {
   update: (id: string, data: any) => {
     return new Promise(async (resolve, reject) => {
       try {
-        await updateDocument('users', id, data);
-        const user = await getDocument<User>('users', id);
+        await updateDocument('admin_users', id, data);
+        const user = await getDocument<User>('admin_users', id);
         resolve({ data: user });
       } catch (error) {
         console.error('Failed to update user:', error);
@@ -110,7 +110,7 @@ export const userService = {
   delete: (id: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        await deleteDocument('users', id);
+        await deleteDocument('admin_users', id);
         resolve({ data: { success: true } });
       } catch (error) {
         console.error('Failed to delete user:', error);
@@ -123,16 +123,16 @@ export const userService = {
   toggleActive: (id: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        const user = await getDocument<User>('users', id);
+        const user = await getDocument<User>('admin_users', id);
         if (!user) {
           throw new Error('User not found');
         }
         
         // 假設有 isActive 字段
         const isActive = (user as any).isActive !== false;
-        await updateDocument('users', id, { isActive: !isActive });
+        await updateDocument('admin_users', id, { isActive: !isActive });
         
-        const updatedUser = await getDocument<User>('users', id);
+        const updatedUser = await getDocument<User>('admin_users', id);
         resolve({ data: updatedUser });
       } catch (error) {
         console.error('Failed to toggle user active:', error);

@@ -1,19 +1,22 @@
 # LINE LIFF 使用指南
 
-## 📱 正確的訪問方式
+## 正確的訪問方式
 
 ### ⚠️ 錯誤的訪問方式
+
 - ❌ 直接訪問：`https://safe-net-tw.web.app/liff`（會顯示「缺少社區 ID 參數」錯誤）
 - ❌ 只用 LIFF ID：`https://liff.line.me/2008889284-MuPboxSM`（缺少 tenantId）
 
 ### ✅ 正確的訪問方式
 
 **完整的 LIFF 連結格式：**
+
 ```
 https://liff.line.me/{LIFF_ID}?tenantId={社區ID}
 ```
 
 **實際範例：**
+
 ```
 https://liff.line.me/2008889284-MuPboxSM?tenantId=MWsT3I62yzygKPYl520f
 ```
@@ -85,12 +88,14 @@ https://liff.line.me/2008889284-MuPboxSM?tenantId=MWsT3I62yzygKPYl520f
 ### 驗證功能
 
 **一般成員可以：**
+
 - 查看長輩列表
 - 查看長輩詳情和行蹤記錄
 - 查看警報列表
 - 查看警報詳情
 
 **管理員額外可以：**
+
 - 新增長輩（長輩列表右上角有「+」按鈕）
 - 分配警報給成員處理
 - 接收被拒絕的警報通知
@@ -98,21 +103,28 @@ https://liff.line.me/2008889284-MuPboxSM?tenantId=MWsT3I62yzygKPYl520f
 ## ❓ 常見問題
 
 ### Q: 顯示「缺少社區 ID 參數」錯誤
+
 **A**: 請確認：
+
 1. 訪問的連結是否包含 `?tenantId=` 參數
 2. 是否從 LINE 環境中開啟
 3. 圖文選單中的連結是否完整
 
 ### Q: 顯示「找不到社區資料」錯誤
+
 **A**: 請檢查：
+
 1. tenantId 是否正確
 2. 該社區是否存在於 Firestore 中
 
 ### Q: 顯示「此社區尚未設定 LINE LIFF ID」錯誤
+
 **A**: 請在後台編輯社區，填寫「LINE LIFF ID」欄位
 
 ### Q: 顯示「您尚未加入此社區」錯誤
+
 **A**: 此用戶需要先：
+
 1. 在 App 中註冊帳號
 2. 申請加入該社區
 3. 管理員在後台「App 成員管理」中批准
@@ -134,11 +146,13 @@ firebase deploy --only hosting
 ## 📞 完整的連結範例
 
 **您的社區 LIFF 連結：**
+
 ```
 https://liff.line.me/2008889284-MuPboxSM?tenantId=MWsT3I62yzygKPYl520f
 ```
 
 這個連結：
+
 - ✅ 包含 LIFF ID：`2008889284-MuPboxSM`
 - ✅ 包含社區 ID：`MWsT3I62yzygKPYl520f`
 - ✅ 可以直接設定到圖文選單

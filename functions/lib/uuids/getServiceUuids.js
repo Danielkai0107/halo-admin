@@ -69,7 +69,7 @@ exports.getServiceUuids = (0, https_1.onRequest)({
         const db = admin.firestore();
         // Get ALL active UUIDs
         const uuidsQuery = await db
-            .collection('beacon_uuids')
+            .collection('uuids')
             .where('isActive', '==', true)
             .get();
         console.log(`Found ${uuidsQuery.docs.length} active service UUIDs`);

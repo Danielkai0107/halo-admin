@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, MapPin, User, AlertTriangle, Battery, Signal, Clock, MapPinned, Calendar, Trash2 } from 'lucide-react';
+import { ArrowLeft, Phone, MapPin, User, AlertTriangle, Battery, Signal, Clock, MapPinned, Calendar, Trash2, Edit, X, Save } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 import { elderService } from '../../services/elderService';
 import { useAuth } from '../../hooks/useAuth';
+import { useTenantStore } from '../../store/tenantStore';
 import { formatDistanceToNow, format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import type { Elder, Activity } from '../../types';
+
+interface ElderFormData extends Partial<Elder> {
+  deviceId?: string;
+}
 
 interface LatestLocation {
   elderId: string;
@@ -25,6 +31,7 @@ export const ElderDetailScreen = () => {
   const { id } = useParams<{ id: string}>();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  const tenant = useTenantStore(state => state.selectedTenant);
   const [elder, setElder] = useState<Elder | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [latestLocation, setLatestLocation] = useState<LatestLocation | null>(null);
@@ -32,6 +39,32 @@ export const ElderDetailScreen = () => {
   const [timeRange, setTimeRange] = useState<24 | 168 | 720>(24); // 24h, 7d, 30d
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // 編輯模式相關
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [availableDevices, setAvailableDevices] = useState<any[]>([]);
+  
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<ElderFormData>();
+  
+  // 當進入編輯模式時，設定表單值
+  useEffect(() => {
+    if (isEditing && elder) {
+      setValue('name', elder.name || '');
+      setValue('gender', elder.gender || undefined);
+      setValue('birthDate', elder.birthDate || '');
+      setValue('age', elder.age);
+      setValue('photo', elder.photo || '');
+      setValue('phone', elder.phone || '');
+      setValue('address', elder.address || '');
+      setValue('emergencyContact', elder.emergencyContact || '');
+      setValue('emergencyPhone', elder.emergencyPhone || '');
+      setValue('status', elder.status || 'ACTIVE');
+      setValue('inactiveThresholdHours', elder.inactiveThresholdHours || 24);
+      setValue('deviceId', elder.deviceId || '');
+      setValue('notes', elder.notes || '');
+    }
+  }, [isEditing, elder, setValue]);
 
   // 安全的時間轉換函數
   const safeToDate = (timestamp: any): Date => {
@@ -126,19 +159,266 @@ export const ElderDetailScreen = () => {
     }
   };
 
+  // 開始編輯
+  const startEditing = async () => {
+    if (!elder || !tenant) return;
+    
+    // 進入編輯模式（useEffect 會自動設定表單值）
+    setIsEditing(true);
+    
+    // 載入可用設備
+    try {
+      const response = await elderService.getAvailableDevices(tenant.id);
+      let devices = response.data || [];
+      
+      // 如果長者已有綁定設備，加入選單
+      if (elder.device) {
+        const deviceExists = devices.some((d: any) => d.id === elder.device?.id);
+        if (!deviceExists) {
+          devices = [elder.device, ...devices];
+        }
+      }
+      
+      setAvailableDevices(devices);
+    } catch (error) {
+      console.error('Failed to load available devices:', error);
+      setAvailableDevices(elder.device ? [elder.device] : []);
+    }
+  };
+
+  // 取消編輯
+  const cancelEditing = () => {
+    setIsEditing(false);
+    reset();
+  };
+
+  // 儲存編輯
+  const onSubmit = async (data: ElderFormData) => {
+    if (!id) return;
+    
+    setSaving(true);
+    try {
+      await elderService.update(id, data);
+      
+      // 重新載入資料
+      const elderRes = await elderService.getOne(id);
+      setElder(elderRes.data);
+      
+      setIsEditing(false);
+      window.alert('更新成功！');
+    } catch (error: any) {
+      console.error('Failed to update elder:', error);
+      window.alert('更新失敗：' + (error.message || '未知錯誤'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center space-x-3">
-        <button
-          onClick={() => navigate('/elders')}
-          className="p-2 hover:bg-gray-100 rounded-lg"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h2 className="text-2xl font-bold text-gray-900">長輩詳情</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => navigate('/elders')}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {isEditing ? '編輯長輩' : '長輩詳情'}
+          </h2>
+        </div>
+        {isAdmin && !isEditing && (
+          <button
+            onClick={startEditing}
+            className="flex items-center space-x-1 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+          >
+            <Edit className="w-4 h-4" />
+            <span>編輯</span>
+          </button>
+        )}
       </div>
 
+      {/* 編輯表單 */}
+      {isEditing ? (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="bg-white rounded-lg shadow p-4 space-y-4">
+            <div>
+              <label className="label">姓名 *</label>
+              <input
+                {...register('name', { required: '請輸入姓名' })}
+                className="input"
+                placeholder="陳阿公"
+              />
+              {errors.name && (
+                <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="label">性別</label>
+              <select {...register('gender')} className="input">
+                <option value="">請選擇</option>
+                <option value="MALE">男</option>
+                <option value="FEMALE">女</option>
+                <option value="OTHER">其他</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="label">出生日期</label>
+              <input
+                type="date"
+                {...register('birthDate')}
+                className="input"
+              />
+            </div>
+
+            <div>
+              <label className="label">年齡</label>
+              <input
+                type="number"
+                {...register('age')}
+                className="input"
+                placeholder="65"
+                min="0"
+                max="150"
+              />
+              <p className="text-xs text-gray-500 mt-1">或填寫出生日期</p>
+            </div>
+
+            <div>
+              <label className="label">照片網址</label>
+              <input
+                type="url"
+                {...register('photo')}
+                className="input"
+                placeholder="https://example.com/photo.jpg"
+              />
+              <p className="text-xs text-gray-500 mt-1">輸入照片的網址（URL）</p>
+            </div>
+
+            <div>
+              <label className="label">電話</label>
+              <input
+                type="tel"
+                {...register('phone')}
+                className="input"
+                placeholder="0912-345-678"
+              />
+            </div>
+
+            <div>
+              <label className="label">地址</label>
+              <input
+                {...register('address')}
+                className="input"
+                placeholder="社區 A 棟 3 樓"
+              />
+            </div>
+
+            <div>
+              <label className="label">緊急聯絡人</label>
+              <input
+                {...register('emergencyContact')}
+                className="input"
+                placeholder="家屬姓名"
+              />
+            </div>
+
+            <div>
+              <label className="label">緊急聯絡電話</label>
+              <input
+                type="tel"
+                {...register('emergencyPhone')}
+                className="input"
+                placeholder="0912-345-678"
+              />
+            </div>
+
+            <div>
+              <label className="label">狀態</label>
+              <select {...register('status')} className="input">
+                <option value="ACTIVE">正常</option>
+                <option value="INACTIVE">不活躍</option>
+                <option value="HOSPITALIZED">住院</option>
+                <option value="DECEASED">已故</option>
+                <option value="MOVED_OUT">遷出</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="label">不活躍警報閾值（小時）</label>
+              <input
+                type="number"
+                {...register('inactiveThresholdHours')}
+                className="input"
+                placeholder="24"
+              />
+            </div>
+
+            <div>
+              <label className="label">關聯設備（可選）</label>
+              <select {...register('deviceId')} className="input">
+                <option value="">暫不關聯設備</option>
+                {availableDevices.map((device) => (
+                  <option key={device.id} value={device.id}>
+                    {device.deviceName || device.uuid || device.macAddress}
+                    {device.batteryLevel ? ` - 電量 ${device.batteryLevel}%` : ''}
+                  </option>
+                ))}
+              </select>
+              {availableDevices.length === 0 && (
+                <p className="text-xs text-orange-600 mt-1">
+                  此社區尚無可用設備
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="label">備註</label>
+              <textarea
+                {...register('notes')}
+                className="input"
+                rows={3}
+                placeholder="特殊注意事項..."
+              />
+            </div>
+          </div>
+
+          {/* 操作按鈕 */}
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={cancelEditing}
+              disabled={saving}
+              className="flex-1 flex items-center justify-center space-x-2 btn-secondary"
+            >
+              <X className="w-4 h-4" />
+              <span>取消</span>
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 flex items-center justify-center space-x-2 btn-primary"
+            >
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>儲存中...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>儲存</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
       {/* 基本資料 */}
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-start space-x-4 mb-4">
@@ -268,7 +548,7 @@ export const ElderDetailScreen = () => {
                 <span className="font-medium">{latestLocation.gateway_name || '未知位置'}</span>
               </div>
               <div className="text-xs opacity-90">
-                類型: {latestLocation.gateway_type === 'BOUNDARY' ? '邊界點' : latestLocation.gateway_type === 'MOBILE' ? '移動接收器' : '一般接收器'}
+                類型: {latestLocation.gateway_type === 'SCHOOL_ZONE' ? '學區' : latestLocation.gateway_type === 'SAFE_ZONE' ? '安全區' : latestLocation.gateway_type === 'OBSERVE_ZONE' ? '觀察區' : '停用'}
               </div>
             </div>
             {(latestLocation.lat && latestLocation.lng) && (
@@ -387,6 +667,8 @@ export const ElderDetailScreen = () => {
             <span>移除長者</span>
           </button>
         </div>
+      )}
+        </>
       )}
 
       {/* 刪除確認對話框 */}

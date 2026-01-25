@@ -36,15 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.receiveBeaconData = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
-const params_1 = require("firebase-functions/params");
 const bot_sdk_1 = require("@line/bot-sdk");
-// Constants
-const COOLDOWN_PERIOD_MS = 2 * 60 * 1000; // 5 minutes in milliseconds
-// Define environment parameter for location update notification
-const enableLocationNotification = (0, params_1.defineString)('ENABLE_LOCATION_UPDATE_NOTIFICATION', {
-    default: 'false',
-    description: '是否啟用位置更新通知（邊界警報和首次活動不受影響）',
-});
 /**
  * Log error to Firestore error_logs collection
  */
@@ -186,7 +178,7 @@ async function getOrCreateGateway(gatewayId, payload, db) {
         serialNumber: gatewayId,
         name: `Auto-Gateway-${gatewayId.substring(0, 8)}`,
         location: `Auto-registered at ${new Date().toISOString()}`,
-        type: 'MOBILE',
+        type: 'SAFE_ZONE',
         tenantId: null,
         isActive: true,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -224,20 +216,14 @@ async function getOrCreateGateway(gatewayId, payload, db) {
     };
 }
 /**
- * Determine the location to use based on gateway type and available data
+ * Determine the location to use based on available data
  */
 function determineLocation(gateway, uploadedLat, uploadedLng) {
-    // For MOBILE gateways, prefer uploaded GPS location
-    if (gateway.type === 'MOBILE') {
-        if (uploadedLat !== undefined && uploadedLng !== undefined) {
-            return { lat: uploadedLat, lng: uploadedLng };
-        }
-    }
-    // For GENERAL and BOUNDARY gateways, prefer database location
+    // Prefer database location if available
     if (gateway.latitude !== undefined && gateway.longitude !== undefined) {
         return { lat: gateway.latitude, lng: gateway.longitude };
     }
-    // If no database location, use uploaded location (if available)
+    // Fall back to uploaded location (if available)
     if (uploadedLat !== undefined && uploadedLng !== undefined) {
         return { lat: uploadedLat, lng: uploadedLng };
     }
@@ -245,12 +231,37 @@ function determineLocation(gateway, uploadedLat, uploadedLng) {
     console.warn(`No location available for gateway ${gateway.id}, using default (0, 0)`);
     return { lat: 0, lng: 0 };
 }
+// Note: Legacy sendLineNotificationToTenant function removed - replaced by first activity and notification point alerts
 /**
- * Send LINE notification to tenant members for elder
+ * Check if this is the first activity today for an elder
  */
-async function sendLineNotificationToTenant(elderId, elder, beacon, gateway, lat, lng, timestamp, tenantId, channelAccessToken, db) {
+async function checkIfFirstActivityToday(elderId, currentTimestamp, db) {
     try {
-        // 1. Get all approved tenant members
+        const elderDoc = await db.collection('elders').doc(elderId).get();
+        if (!elderDoc.exists)
+            return false;
+        const elder = elderDoc.data();
+        const lastActivityAt = elder === null || elder === void 0 ? void 0 : elder.lastActivityAt;
+        if (!lastActivityAt) {
+            return true; // 從未有活動，這是第一次
+        }
+        // 比較日期（只比年月日）
+        const lastActivityDate = new Date(lastActivityAt);
+        const currentDate = new Date(currentTimestamp);
+        const lastActivityDay = lastActivityDate.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+        const currentDay = currentDate.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+        return lastActivityDay !== currentDay;
+    }
+    catch (error) {
+        console.error('Error checking first activity:', error);
+        return false;
+    }
+}
+/**
+ * Send LINE notification for first activity today
+ */
+async function sendFirstActivityNotification(elderId, elder, gateway, lat, lng, timestamp, tenantId, channelAccessToken, db) {
+    try {
         const membersQuery = await db
             .collection('tenants').doc(tenantId)
             .collection('members')
@@ -260,11 +271,10 @@ async function sendLineNotificationToTenant(elderId, elder, beacon, gateway, lat
             console.log(`No approved members found for tenant ${tenantId}`);
             return;
         }
-        // 2. Get appUsers with LINE IDs
         const memberAppUserIds = membersQuery.docs.map(doc => doc.data().appUserId);
         const lineUserIds = [];
         for (const appUserId of memberAppUserIds) {
-            const appUserDoc = await db.collection('appUsers').doc(appUserId).get();
+            const appUserDoc = await db.collection('line_users').doc(appUserId).get();
             if (appUserDoc.exists) {
                 const appUser = appUserDoc.data();
                 if (appUser === null || appUser === void 0 ? void 0 : appUser.lineUserId) {
@@ -276,31 +286,13 @@ async function sendLineNotificationToTenant(elderId, elder, beacon, gateway, lat
             console.log(`No members with LINE accounts found for tenant ${tenantId}`);
             return;
         }
-        // Check if location update notification is enabled
-        const notificationEnabled = enableLocationNotification.value() === 'true';
-        const isFirstActivity = false; // This would need to be determined differently in the new architecture
-        if (gateway.type !== 'BOUNDARY' && !isFirstActivity && !notificationEnabled) {
-            console.log(`Location update notification disabled, skipping notification for ${gateway.type} gateway`);
-            return;
-        }
-        // 3. Create LINE client and send message
         const client = new bot_sdk_1.Client({ channelAccessToken });
-        const gatewayTypeText = gateway.type === 'BOUNDARY' ? '邊界點' :
-            gateway.type === 'MOBILE' ? '移動接收器' : '一般接收器';
-        let headerText = '';
-        let bodyText = '';
-        if (gateway.type === 'BOUNDARY') {
-            headerText = '邊界警報';
-            bodyText = `${(elder === null || elder === void 0 ? void 0 : elder.name) || '長輩'} 出現在邊界點`;
-        }
-        else {
-            headerText = '位置更新';
-            bodyText = `${(elder === null || elder === void 0 ? void 0 : elder.name) || '長輩'} 位置已更新`;
-        }
+        const elderName = (elder === null || elder === void 0 ? void 0 : elder.name) || '長輩';
+        const locationText = gateway.location || gateway.name || '未知位置';
         const lastSeenTime = new Date(timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
         const flexMessage = {
             type: 'flex',
-            altText: `${(elder === null || elder === void 0 ? void 0 : elder.name) || '長輩'} ${headerText}通知`,
+            altText: `${elderName} 今日首次活動`,
             contents: {
                 type: 'bubble',
                 header: {
@@ -309,13 +301,12 @@ async function sendLineNotificationToTenant(elderId, elder, beacon, gateway, lat
                     contents: [
                         {
                             type: 'text',
-                            text: headerText,
+                            text: `${elderName} 今日首次活動`,
                             weight: 'bold',
                             size: 'lg',
                             color: '#111111',
                         },
                     ],
-                    backgroundColor: '#FFFFFF',
                 },
                 body: {
                     type: 'box',
@@ -323,9 +314,9 @@ async function sendLineNotificationToTenant(elderId, elder, beacon, gateway, lat
                     contents: [
                         {
                             type: 'text',
-                            text: bodyText,
-                            weight: 'bold',
+                            text: `${elderName} 今日首次在 ${locationText} 被偵測到`,
                             size: 'md',
+                            color: '#111111',
                             wrap: true,
                         },
                         {
@@ -340,14 +331,13 @@ async function sendLineNotificationToTenant(elderId, elder, beacon, gateway, lat
                             contents: [
                                 {
                                     type: 'box',
-                                    layout: 'baseline',
-                                    spacing: 'sm',
+                                    layout: 'horizontal',
                                     contents: [
                                         {
                                             type: 'text',
                                             text: '長輩',
                                             size: 'sm',
-                                            color: '#999999',
+                                            color: '#555555',
                                             flex: 2,
                                         },
                                         {
@@ -362,19 +352,18 @@ async function sendLineNotificationToTenant(elderId, elder, beacon, gateway, lat
                                 },
                                 {
                                     type: 'box',
-                                    layout: 'baseline',
-                                    spacing: 'sm',
+                                    layout: 'horizontal',
                                     contents: [
                                         {
                                             type: 'text',
-                                            text: '位置',
+                                            text: '地點',
                                             size: 'sm',
-                                            color: '#999999',
+                                            color: '#555555',
                                             flex: 2,
                                         },
                                         {
                                             type: 'text',
-                                            text: gateway.name || gateway.location || '未知',
+                                            text: locationText,
                                             size: 'sm',
                                             color: '#111111',
                                             flex: 5,
@@ -384,35 +373,13 @@ async function sendLineNotificationToTenant(elderId, elder, beacon, gateway, lat
                                 },
                                 {
                                     type: 'box',
-                                    layout: 'baseline',
-                                    spacing: 'sm',
-                                    contents: [
-                                        {
-                                            type: 'text',
-                                            text: '類型',
-                                            size: 'sm',
-                                            color: '#999999',
-                                            flex: 2,
-                                        },
-                                        {
-                                            type: 'text',
-                                            text: gatewayTypeText,
-                                            size: 'sm',
-                                            color: '#111111',
-                                            flex: 5,
-                                        },
-                                    ],
-                                },
-                                {
-                                    type: 'box',
-                                    layout: 'baseline',
-                                    spacing: 'sm',
+                                    layout: 'horizontal',
                                     contents: [
                                         {
                                             type: 'text',
                                             text: '時間',
                                             size: 'sm',
-                                            color: '#999999',
+                                            color: '#555555',
                                             flex: 2,
                                         },
                                         {
@@ -446,80 +413,191 @@ async function sendLineNotificationToTenant(elderId, elder, beacon, gateway, lat
                 },
             },
         };
-        // Send to all member LINE users
         for (const lineUserId of lineUserIds) {
             try {
                 await client.pushMessage(lineUserId, flexMessage);
-                console.log(`Sent LINE notification to member ${lineUserId}`);
+                console.log(`Sent first activity notification to member ${lineUserId}`);
             }
             catch (error) {
-                console.error(`Failed to send LINE notification to ${lineUserId}:`, error);
+                console.error(`Failed to send first activity notification to ${lineUserId}:`, error);
             }
         }
     }
     catch (error) {
-        console.error('Error sending LINE notification to tenant:', error);
+        console.error('Error sending first activity notification:', error);
     }
 }
 /**
- * Create boundary alert for elder (simplified)
+ * Send LINE notification for tenant notification point
  */
-async function createBoundaryAlertForElder(elderId, elder, beacon, gateway, lat, lng, tenantId, db) {
+async function sendTenantNotificationPointAlert(elderId, elder, notificationPoint, gateway, lat, lng, timestamp, tenantId, channelAccessToken, db) {
     try {
-        // Check if there's already a recent BOUNDARY alert (within cooldown period)
-        const recentAlertsQuery = await db
-            .collection('alerts')
-            .where('elderId', '==', elderId)
-            .where('type', '==', 'BOUNDARY')
-            .where('gatewayId', '==', gateway.id)
-            .limit(10)
+        const membersQuery = await db
+            .collection('tenants').doc(tenantId)
+            .collection('members')
+            .where('status', '==', 'APPROVED')
             .get();
-        // Check in memory for recent alerts
-        const now = Date.now();
-        for (const doc of recentAlertsQuery.docs) {
-            const alertData = doc.data();
-            if (alertData.triggeredAt) {
-                const lastAlertTime = alertData.triggeredAt.toMillis ?
-                    alertData.triggeredAt.toMillis() :
-                    new Date(alertData.triggeredAt).getTime();
-                const timeDiff = now - lastAlertTime;
-                if (timeDiff < COOLDOWN_PERIOD_MS) {
-                    console.log(`Boundary alert cooldown active for elder ${elderId} at gateway ${gateway.id} (${Math.floor(timeDiff / 1000)}s ago)`);
-                    return;
+        if (membersQuery.empty) {
+            console.log(`No approved members found for tenant ${tenantId}`);
+            return;
+        }
+        const memberAppUserIds = membersQuery.docs.map(doc => doc.data().appUserId);
+        const lineUserIds = [];
+        for (const appUserId of memberAppUserIds) {
+            const appUserDoc = await db.collection('line_users').doc(appUserId).get();
+            if (appUserDoc.exists) {
+                const appUser = appUserDoc.data();
+                if (appUser === null || appUser === void 0 ? void 0 : appUser.lineUserId) {
+                    lineUserIds.push(appUser.lineUserId);
                 }
             }
         }
-        // Create boundary alert
-        await db.collection('alerts').add({
-            tenantId: tenantId,
-            elderId: elderId,
-            gatewayId: gateway.id,
-            type: 'BOUNDARY',
-            status: 'PENDING',
-            severity: 'HIGH',
-            title: `${(elder === null || elder === void 0 ? void 0 : elder.name) || '長輩'} 出現在邊界點`,
-            message: `${(elder === null || elder === void 0 ? void 0 : elder.name) || '長輩'} 在 ${gateway.name || gateway.location || '邊界點'} 被偵測到，請注意其安全。`,
-            details: {
-                beaconUuid: beacon.uuid,
-                beaconMajor: beacon.major,
-                beaconMinor: beacon.minor,
-                rssi: beacon.rssi,
-                gatewayName: gateway.name,
-                gatewayLocation: gateway.location,
+        if (lineUserIds.length === 0) {
+            console.log(`No members with LINE accounts found for tenant ${tenantId}`);
+            return;
+        }
+        const client = new bot_sdk_1.Client({ channelAccessToken });
+        const elderName = (elder === null || elder === void 0 ? void 0 : elder.name) || '長輩';
+        const locationText = gateway.location || notificationPoint.name || '未知位置';
+        const notificationMessage = `${elderName} 出現在 ${locationText} 附近`;
+        const lastSeenTime = new Date(timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+        const flexMessage = {
+            type: 'flex',
+            altText: `新偵測通知 - ${elderName}`,
+            contents: {
+                type: 'bubble',
+                header: {
+                    type: 'box',
+                    layout: 'vertical',
+                    contents: [
+                        {
+                            type: 'text',
+                            text: '新偵測通知',
+                            weight: 'bold',
+                            size: 'lg',
+                            color: '#111111',
+                        },
+                    ],
+                },
+                body: {
+                    type: 'box',
+                    layout: 'vertical',
+                    contents: [
+                        {
+                            type: 'text',
+                            text: notificationMessage,
+                            size: 'md',
+                            color: '#111111',
+                            wrap: true,
+                        },
+                        {
+                            type: 'separator',
+                            margin: 'md',
+                        },
+                        {
+                            type: 'box',
+                            layout: 'vertical',
+                            margin: 'md',
+                            spacing: 'sm',
+                            contents: [
+                                {
+                                    type: 'box',
+                                    layout: 'horizontal',
+                                    contents: [
+                                        {
+                                            type: 'text',
+                                            text: '長輩',
+                                            size: 'sm',
+                                            color: '#555555',
+                                            flex: 2,
+                                        },
+                                        {
+                                            type: 'text',
+                                            text: (elder === null || elder === void 0 ? void 0 : elder.name) || '未知',
+                                            size: 'sm',
+                                            color: '#111111',
+                                            flex: 5,
+                                            wrap: true,
+                                        },
+                                    ],
+                                },
+                                {
+                                    type: 'box',
+                                    layout: 'horizontal',
+                                    contents: [
+                                        {
+                                            type: 'text',
+                                            text: '地點',
+                                            size: 'sm',
+                                            color: '#555555',
+                                            flex: 2,
+                                        },
+                                        {
+                                            type: 'text',
+                                            text: notificationPoint.name,
+                                            size: 'sm',
+                                            color: '#111111',
+                                            flex: 5,
+                                            wrap: true,
+                                        },
+                                    ],
+                                },
+                                {
+                                    type: 'box',
+                                    layout: 'horizontal',
+                                    contents: [
+                                        {
+                                            type: 'text',
+                                            text: '時間',
+                                            size: 'sm',
+                                            color: '#555555',
+                                            flex: 2,
+                                        },
+                                        {
+                                            type: 'text',
+                                            text: lastSeenTime,
+                                            size: 'sm',
+                                            color: '#111111',
+                                            flex: 5,
+                                            wrap: true,
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                },
+                footer: {
+                    type: 'box',
+                    layout: 'vertical',
+                    contents: [
+                        {
+                            type: 'button',
+                            style: 'primary',
+                            action: {
+                                type: 'uri',
+                                label: '查看地圖',
+                                uri: `https://www.google.com/maps?q=${lat},${lng}`,
+                            },
+                        },
+                    ],
+                },
             },
-            latitude: lat,
-            longitude: lng,
-            triggeredAt: admin.firestore.FieldValue.serverTimestamp(),
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-        console.log(`Created BOUNDARY alert for elder ${elderId} at gateway ${gateway.id}`);
+        };
+        for (const lineUserId of lineUserIds) {
+            try {
+                await client.pushMessage(lineUserId, flexMessage);
+                console.log(`Sent notification point alert to member ${lineUserId}`);
+            }
+            catch (error) {
+                console.error(`Failed to send notification point alert to ${lineUserId}:`, error);
+            }
+        }
     }
     catch (error) {
-        console.error('Error creating boundary alert:', error);
+        console.error('Error sending notification point alert:', error);
     }
 }
-// OLD FUNCTIONS REMOVED - Now using sendLineNotificationToTenant and createBoundaryAlertForElder
 /**
  * Record device activity to device subcollection
  */
@@ -550,12 +628,12 @@ async function recordDeviceActivity(deviceId, device, beacon, gateway, lat, lng,
 /**
  * Handle notification based on device binding type
  */
-async function handleNotification(deviceId, device, beacon, gateway, lat, lng, timestamp, db) {
+async function handleNotification(deviceId, device, beacon, gateway, lat, lng, timestamp, db, isFirstActivityToday = false) {
     const bindingType = device.bindingType || 'UNBOUND';
     switch (bindingType) {
         case 'ELDER':
             if (device.boundTo) {
-                return await handleElderNotification(deviceId, device.boundTo, beacon, gateway, lat, lng, timestamp, db);
+                return await handleElderNotification(deviceId, device.boundTo, beacon, gateway, lat, lng, timestamp, db, isFirstActivityToday);
             }
             return { triggered: false, type: null };
         case 'MAP_USER':
@@ -572,7 +650,7 @@ async function handleNotification(deviceId, device, beacon, gateway, lat, lng, t
 /**
  * Handle Elder notification (LINE)
  */
-async function handleElderNotification(deviceId, elderId, beacon, gateway, lat, lng, timestamp, db) {
+async function handleElderNotification(deviceId, elderId, beacon, gateway, lat, lng, timestamp, db, isFirstActivityToday = false) {
     try {
         // 1. Get elder data
         const elderDoc = await db.collection('elders').doc(elderId).get();
@@ -586,7 +664,16 @@ async function handleElderNotification(deviceId, elderId, beacon, gateway, lat, 
             console.log(`Elder ${elderId} has no associated tenant, skipping notification`);
             return { triggered: false, type: null };
         }
-        // 2. Get tenant LINE settings
+        // 2. Check if gateway is a notification point for this tenant
+        const notificationPointsSnapshot = await db
+            .collection('tenantNotificationPoints')
+            .where('tenantId', '==', tenantId)
+            .where('gatewayId', '==', gateway.id)
+            .where('isActive', '==', true)
+            .where('notifyOnElderActivity', '==', true)
+            .limit(1)
+            .get();
+        // 3. Get tenant LINE settings
         const tenantDoc = await db.collection('tenants').doc(tenantId).get();
         if (!tenantDoc.exists) {
             console.log(`Tenant ${tenantId} not found`);
@@ -598,21 +685,43 @@ async function handleElderNotification(deviceId, elderId, beacon, gateway, lat, 
             console.log(`Tenant ${tenantId} has no LINE Channel Access Token`);
             return { triggered: false, type: null };
         }
-        // 3. Send LINE notification (reuse existing LINE notification logic)
-        await sendLineNotificationToTenant(elderId, elder, beacon, gateway, lat, lng, timestamp, tenantId, channelAccessToken, db);
-        // 4. Handle boundary alert
-        if (gateway.type === 'BOUNDARY') {
-            await createBoundaryAlertForElder(elderId, elder, beacon, gateway, lat, lng, tenantId, db);
+        // 4. Priority 1: Send first activity notification if this is today's first activity
+        if (isFirstActivityToday) {
+            console.log(`Elder ${elder.name} first activity today`);
+            await sendFirstActivityNotification(elderId, elder, gateway, lat, lng, timestamp, tenantId, channelAccessToken, db);
+            return {
+                triggered: true,
+                type: 'LINE',
+                details: {
+                    elderId: elderId,
+                    tenantId: tenantId,
+                    notificationType: 'FIRST_ACTIVITY',
+                }
+            };
         }
-        console.log(`Handled elder notification for ${elderId}`);
+        // 5. Priority 2: If gateway is a notification point, send notification
+        if (!notificationPointsSnapshot.empty) {
+            const notificationPoint = notificationPointsSnapshot.docs[0];
+            const pointData = notificationPoint.data();
+            console.log(`Elder ${elder.name} passed through notification point: ${pointData.name}`);
+            await sendTenantNotificationPointAlert(elderId, elder, pointData, gateway, lat, lng, timestamp, tenantId, channelAccessToken, db);
+            return {
+                triggered: true,
+                type: 'LINE',
+                pointId: notificationPoint.id,
+                details: {
+                    elderId: elderId,
+                    tenantId: tenantId,
+                    gatewayType: gateway.type,
+                    notificationPointName: pointData.name,
+                }
+            };
+        }
+        // 6. No notification sent
+        console.log(`No notification sent for elder ${elderId} (not first activity, not notification point)`);
         return {
-            triggered: true,
-            type: 'LINE',
-            details: {
-                elderId: elderId,
-                tenantId: tenantId,
-                gatewayType: gateway.type,
-            }
+            triggered: false,
+            type: null,
         };
     }
     catch (error) {
@@ -625,6 +734,11 @@ async function handleElderNotification(deviceId, elderId, beacon, gateway, lat, 
  */
 async function handleMapUserNotification(deviceId, mapAppUserId, beacon, gateway, lat, lng, timestamp, db) {
     try {
+        // Skip notifications for OBSERVE_ZONE and INACTIVE gateways
+        if (gateway.type === 'OBSERVE_ZONE' || gateway.type === 'INACTIVE') {
+            console.log(`Skipping FCM notification for ${gateway.type} gateway (notification disabled for this type)`);
+            return { triggered: false, type: null };
+        }
         // 1. Check if user has notification points at this gateway
         const notifPointsSnapshot = await db
             .collection('mapUserNotificationPoints')
@@ -640,7 +754,7 @@ async function handleMapUserNotification(deviceId, mapAppUserId, beacon, gateway
         const notifPoint = notifPointsSnapshot.docs[0];
         const notifPointData = notifPoint.data();
         // 2. Get user FCM token
-        const userDoc = await db.collection('mapAppUsers').doc(mapAppUserId).get();
+        const userDoc = await db.collection('app_users').doc(mapAppUserId).get();
         if (!userDoc.exists) {
             console.log(`Map user ${mapAppUserId} not found`);
             // 即使用戶不存在，仍記錄這是通知點
@@ -743,19 +857,22 @@ async function processBeacon(beacon, gateway, uploadedLat, uploadedLng, timestam
     var _a;
     // Determine the location to use based on gateway type
     const { lat, lng } = determineLocation(gateway, uploadedLat, uploadedLng);
+    // Normalize UUID to lowercase for case-insensitive matching
+    const normalizedUuid = beacon.uuid.toLowerCase();
     try {
         // 1. Find device by UUID + Major + Minor (unique identifier for Beacon)
+        // Note: UUID is normalized to lowercase for case-insensitive matching
         const deviceQuery = await db
             .collection('devices')
-            .where('uuid', '==', beacon.uuid)
+            .where('uuid', '==', normalizedUuid)
             .where('major', '==', beacon.major)
             .where('minor', '==', beacon.minor)
             .where('isActive', '==', true)
             .limit(1)
             .get();
         if (deviceQuery.empty) {
-            console.log(`No active device found for UUID ${beacon.uuid}, Major ${beacon.major}, Minor ${beacon.minor}, skipping`);
-            return { status: 'ignored', beaconId: `${beacon.uuid}-${beacon.major}-${beacon.minor}` };
+            console.log(`No active device found for UUID ${normalizedUuid}, Major ${beacon.major}, Minor ${beacon.minor}, skipping`);
+            return { status: 'ignored', beaconId: `${normalizedUuid}-${beacon.major}-${beacon.minor}` };
         }
         const deviceDoc = deviceQuery.docs[0];
         const device = deviceDoc.data();
@@ -771,9 +888,27 @@ async function processBeacon(beacon, gateway, uploadedLat, uploadedLng, timestam
         }
         await deviceDoc.ref.update(deviceUpdateData);
         console.log(`Updated device ${deviceId} - batteryLevel: ${(_a = beacon.batteryLevel) !== null && _a !== void 0 ? _a : 'N/A'}, lastSeen: ${new Date(timestamp).toISOString()}`);
-        // 3. Handle notification based on binding type (unified) - 先處理通知
-        const notificationResult = await handleNotification(deviceId, device, beacon, gateway, lat, lng, timestamp, db);
-        // 4. Record activity to device subcollection (unified) - 再記錄活動（包含通知資訊）
+        // 3. Check if this is first activity today for elder
+        let isFirstActivityToday = false;
+        if (device.bindingType === 'ELDER' && device.boundTo) {
+            isFirstActivityToday = await checkIfFirstActivityToday(device.boundTo, timestamp, db);
+        }
+        // 4. Handle notification based on binding type (unified) - 先處理通知
+        const notificationResult = await handleNotification(deviceId, device, beacon, gateway, lat, lng, timestamp, db, isFirstActivityToday);
+        // 5. Update elder's lastActivityAt if device is bound to elder
+        if (device.bindingType === 'ELDER' && device.boundTo) {
+            try {
+                await db.collection('elders').doc(device.boundTo).update({
+                    lastActivityAt: new Date(timestamp).toISOString(),
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`Updated elder ${device.boundTo} lastActivityAt`);
+            }
+            catch (error) {
+                console.error(`Failed to update elder lastActivityAt:`, error);
+            }
+        }
+        // 6. Record activity to device subcollection (unified) - 再記錄活動（包含通知資訊）
         await recordDeviceActivity(deviceId, device, beacon, gateway, lat, lng, timestamp, notificationResult, db);
         return { status: 'updated', beaconId: deviceId };
     }

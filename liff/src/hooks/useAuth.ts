@@ -47,7 +47,7 @@ export const useAuth = () => {
 
         // 3. 查詢或創建 appUser 記錄
         const appUsersQuery = query(
-          collection(db, 'appUsers'),
+          collection(db, 'line_users'),
           where('lineUserId', '==', profile.userId)
         );
         
@@ -58,7 +58,7 @@ export const useAuth = () => {
         if (appUsersSnap.empty) {
           // 創建新的 appUser 記錄（首次使用）
           const { addDoc } = await import('firebase/firestore');
-          const docRef = await addDoc(collection(db, 'appUsers'), {
+          const docRef = await addDoc(collection(db, 'line_users'), {
             lineUserId: profile.userId,
             lineDisplayName: profile.displayName,
             linePictureUrl: profile.pictureUrl,
@@ -75,7 +75,7 @@ export const useAuth = () => {
           appUserId = appUsersSnap.docs[0].id;
           // 更新 LINE 資訊和最後登入時間
           const { updateDoc, doc } = await import('firebase/firestore');
-          await updateDoc(doc(db, 'appUsers', appUserId), {
+          await updateDoc(doc(db, 'line_users', appUserId), {
             lineDisplayName: profile.displayName,
             linePictureUrl: profile.pictureUrl,
             lastLoginAt: new Date().toISOString(),
@@ -143,7 +143,7 @@ export const useAuth = () => {
             console.error('Error verifying user tenant:', error);
             // 如果驗證失敗，嘗試使用 joinedFromTenantId 作為備用方案
             const appUserDoc = await getDocs(query(
-              collection(db, 'appUsers'),
+              collection(db, 'line_users'),
               where('lineUserId', '==', profile.userId)
             ));
             

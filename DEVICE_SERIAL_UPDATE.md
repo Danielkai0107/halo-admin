@@ -11,15 +11,17 @@
 ### 1. 自動生成序號邏輯
 
 **修改前：**
+
 ```typescript
 // 生成格式：d-年份-月份-該月第幾個
 const deviceSerial = `d-26-01-0001`;
 ```
 
 **修改後：**
+
 ```typescript
 // 自動根據 Major 和 Minor 生成
-const deviceSerial = `${major}-${minor}`;  // 例如：1-1001
+const deviceSerial = `${major}-${minor}`; // 例如：1-1001
 ```
 
 ### 2. 表單自動更新
@@ -28,13 +30,13 @@ const deviceSerial = `${major}-${minor}`;  // 例如：1-1001
 
 ```typescript
 // 監聽 major 和 minor 的變化
-const major = watch('major');
-const minor = watch('minor');
+const major = watch("major");
+const minor = watch("minor");
 
 useEffect(() => {
   if (major !== undefined && minor !== undefined) {
     const deviceSerial = `${major}-${minor}`;
-    setValue('deviceName', deviceSerial);
+    setValue("deviceName", deviceSerial);
   }
 }, [major, minor, setValue]);
 ```
@@ -42,6 +44,7 @@ useEffect(() => {
 ### 3. 表單欄位更新
 
 **序號欄位：**
+
 - ✅ 改為**唯讀**欄位（自動生成）
 - ✅ 不再需要手動輸入
 - ✅ 顯示提示：「序號格式：Major-Minor（例如：1-1001）會自動更新」
@@ -52,9 +55,11 @@ useEffect(() => {
 
 ```typescript
 // 優先顯示 Major-Minor，沒有則顯示原本的 deviceName
-{device.major !== undefined && device.minor !== undefined 
-  ? `${device.major}-${device.minor}` 
-  : device.deviceName || '-'}
+{
+  device.major !== undefined && device.minor !== undefined
+    ? `${device.major}-${device.minor}`
+    : device.deviceName || "-";
+}
 ```
 
 ---
@@ -83,19 +88,19 @@ useEffect(() => {
 
 ### 範例 1：大愛社區設備
 
-| 長者 | Major | Minor | 自動生成序號 |
-|------|-------|-------|-------------|
-| 王奶奶 | 1 | 1001 | `1-1001` |
-| 李爺爺 | 1 | 1002 | `1-1002` |
-| 張奶奶 | 1 | 1003 | `1-1003` |
+| 長者   | Major | Minor | 自動生成序號 |
+| ------ | ----- | ----- | ------------ |
+| 王奶奶 | 1     | 1001  | `1-1001`     |
+| 李爺爺 | 1     | 1002  | `1-1002`     |
+| 張奶奶 | 1     | 1003  | `1-1003`     |
 
 ### 範例 2：多社區設備
 
-| 社區 | Major | Minor 範圍 | 序號範圍 |
-|------|-------|------------|----------|
-| 大愛社區 | 1 | 1001-1099 | `1-1001` ~ `1-1099` |
-| 博愛社區 | 2 | 2001-2099 | `2-2001` ~ `2-2099` |
-| 仁愛社區 | 3 | 3001-3099 | `3-3001` ~ `3-3099` |
+| 社區     | Major | Minor 範圍 | 序號範圍            |
+| -------- | ----- | ---------- | ------------------- |
+| 大愛社區 | 1     | 1001-1099  | `1-1001` ~ `1-1099` |
+| 博愛社區 | 2     | 2001-2099  | `2-2001` ~ `2-2099` |
+| 仁愛社區 | 3     | 3001-3099  | `3-3001` ~ `3-3099` |
 
 ---
 
@@ -119,13 +124,18 @@ useEffect(() => {
 const { watch, setValue } = useForm();
 
 // 2. 監聽 major 和 minor
-const major = watch('major');
-const minor = watch('minor');
+const major = watch("major");
+const minor = watch("minor");
 
 // 3. 自動更新 deviceName
 useEffect(() => {
-  if (major !== undefined && minor !== undefined && major !== '' && minor !== '') {
-    setValue('deviceName', `${major}-${minor}`);
+  if (
+    major !== undefined &&
+    minor !== undefined &&
+    major !== "" &&
+    minor !== ""
+  ) {
+    setValue("deviceName", `${major}-${minor}`);
   }
 }, [major, minor, setValue]);
 ```
@@ -144,7 +154,7 @@ useEffect(() => {
 
 - ⚠️ Major-Minor 組合應該是唯一的
 - ⚠️ 系統目前**不會**自動檢查重複（可以在未來加入）
-- 💡 建議：規劃好 Major 和 Minor 的編號規則
+- 建議：規劃好 Major 和 Minor 的編號規則
 
 ### 3. 與硬體設定的一致性
 
@@ -168,18 +178,22 @@ useEffect(() => {
 ## 🎉 優點
 
 ### 1. 更直觀
+
 - ✅ 序號直接對應硬體的 Major-Minor
 - ✅ 一眼就能看出設備的群組和編號
 
 ### 2. 更一致
+
 - ✅ 與 Beacon 硬體設定完全對應
 - ✅ 減少人為錯誤
 
 ### 3. 更簡單
+
 - ✅ 自動生成，不需要手動輸入
 - ✅ 修改 Major/Minor 時自動更新
 
 ### 4. 更靈活
+
 - ✅ Major 可以代表社區/區域
 - ✅ Minor 可以代表個人編號
 - ✅ 組合靈活，易於管理
@@ -189,16 +203,19 @@ useEffect(() => {
 ## 📝 測試清單
 
 新增設備測試：
+
 - [ ] 輸入 Major 和 Minor，序號是否自動更新
 - [ ] 序號格式是否正確（Major-Minor）
 - [ ] 儲存後資料是否正確
 
 編輯設備測試：
+
 - [ ] 載入時序號是否正確顯示
 - [ ] 修改 Major/Minor 時序號是否自動更新
 - [ ] 更新後資料是否正確
 
 列表顯示測試：
+
 - [ ] 序號欄位是否顯示 Major-Minor 格式
 - [ ] 舊設備（無 Major/Minor）是否顯示原本的 deviceName
 - [ ] 新設備是否正確顯示
@@ -210,6 +227,7 @@ useEffect(() => {
 ### 問題：序號沒有自動更新
 
 **可能原因：**
+
 1. Major 或 Minor 欄位為空
 2. Major 或 Minor 值為 `undefined`
 

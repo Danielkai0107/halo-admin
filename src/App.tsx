@@ -4,10 +4,13 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { TenantsPage } from './pages/TenantsPage';
 import { UsersPage } from './pages/UsersPage';
-import { AppUsersPage } from './pages/AppUsersPage';
+import { SaasUsersPage } from './pages/SaasUsersPage';
+import { MapAppUsersPage } from './pages/MapAppUsersPage';
+import { MapAppUserDetailPage } from './pages/MapAppUserDetailPage';
 import { EldersPage } from './pages/EldersPage';
 import { ElderDetailPage } from './pages/ElderDetailPage';
 import { DevicesPage } from './pages/DevicesPage';
+import { DeviceDetailPage } from './pages/DeviceDetailPage';
 import { UUIDsPage } from './pages/UUIDsPage';
 import { GatewaysPage } from './pages/GatewaysPage';
 import { AlertsPage } from './pages/AlertsPage';
@@ -53,10 +56,13 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="tenants" element={<TenantsPage />} />
           <Route path="users" element={<UsersPage />} />
-          <Route path="app-users" element={<AppUsersPage />} />
+          <Route path="saas-users" element={<SaasUsersPage />} />
+          <Route path="map-app-users" element={<MapAppUsersPage />} />
+          <Route path="map-app-users/:id" element={<MapAppUserDetailPage />} />
           <Route path="elders" element={<EldersPage />} />
           <Route path="elders/:id" element={<ElderDetailPage />} />
           <Route path="devices" element={<DevicesPage />} />
+          <Route path="devices/:id" element={<DeviceDetailPage />} />
           <Route path="uuids" element={<UUIDsPage />} />
           <Route path="gateways" element={<GatewaysPage />} />
           <Route path="alerts" element={<AlertsPage />} />

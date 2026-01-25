@@ -39,7 +39,7 @@ export const completeAlert = functions.https.onCall(async (data: CompleteAlertDa
     }
 
     // 4. 獲取成員資料
-    const memberDoc = await db.collection('appUsers').doc(memberId).get();
+    const memberDoc = await db.collection('line_users').doc(memberId).get();
     const memberName = memberDoc.exists ? memberDoc.data()?.name : '成員';
 
     // 5. 更新警報狀態為已解決
@@ -72,7 +72,7 @@ export const completeAlert = functions.https.onCall(async (data: CompleteAlertDa
         // 通知所有管理員
         const notificationPromises = adminsQuery.docs.map(async (doc) => {
           const adminData = doc.data();
-          const adminUserDoc = await db.collection('appUsers').doc(adminData.appUserId).get();
+          const adminUserDoc = await db.collection('line_users').doc(adminData.appUserId).get();
           const adminUser = adminUserDoc.data();
 
           if (adminUser?.lineUserId) {

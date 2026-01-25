@@ -75,7 +75,7 @@ export const gatewayService = {
     try {
       const id = await createDocument('gateways', {
         ...data,
-        type: data.type || 'GENERAL',
+        type: data.type || 'SAFE_ZONE',
         // tenantId 可以是 null 或社區 ID（僅用於標記位置）
         isActive: data.isActive !== undefined ? data.isActive : true,
       });

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { X, Radio, MapPin, Wifi, Plus, Search, Trash2 } from 'lucide-react';
-import { gatewayService } from '../services/gatewayService';
-import type { Gateway } from '../types';
+import { useEffect, useState } from "react";
+import { X, Radio, MapPin, Wifi, Plus, Search, Trash2 } from "lucide-react";
+import { gatewayService } from "../services/gatewayService";
+import type { Gateway } from "../types";
 
 interface GatewayListModalProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ export const GatewayListModal = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [availableGateways, setAvailableGateways] = useState<Gateway[]>([]);
   const [selectedGateways, setSelectedGateways] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (isOpen && tenantId) {
@@ -37,7 +37,7 @@ export const GatewayListModal = ({
       const response: any = await gatewayService.getAll(1, 100, tenantId);
       setGateways(response.data.data || []);
     } catch (error) {
-      console.error('Failed to load gateways:', error);
+      console.error("Failed to load gateways:", error);
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,7 @@ export const GatewayListModal = ({
       const available = allGateways.filter((g: Gateway) => !g.tenantId);
       setAvailableGateways(available);
     } catch (error) {
-      console.error('Failed to load available gateways:', error);
+      console.error("Failed to load available gateways:", error);
     }
   };
 
@@ -62,11 +62,11 @@ export const GatewayListModal = ({
     try {
       // 將 tenantId 設為 undefined，移除社區標籤
       await gatewayService.update(gatewayId, { tenantId: undefined as any });
-      alert('已移除社區標籤');
+      alert("已移除社區標籤");
       loadGateways();
       loadAvailableGateways();
     } catch (error: any) {
-      alert(error.response?.data?.message || '移除失敗');
+      alert(error.response?.data?.message || "移除失敗");
     }
   };
 
@@ -74,13 +74,13 @@ export const GatewayListModal = ({
     setSelectedGateways((prev) =>
       prev.includes(gatewayId)
         ? prev.filter((id) => id !== gatewayId)
-        : [...prev, gatewayId]
+        : [...prev, gatewayId],
     );
   };
 
   const handleAddGateways = async () => {
     if (selectedGateways.length === 0) {
-      alert('請至少選擇一個接收點');
+      alert("請至少選擇一個接收點");
       return;
     }
 
@@ -88,8 +88,8 @@ export const GatewayListModal = ({
       // 批量更新選中的接收點，標記為此社區
       await Promise.all(
         selectedGateways.map((gatewayId) =>
-          gatewayService.update(gatewayId, { tenantId })
-        )
+          gatewayService.update(gatewayId, { tenantId }),
+        ),
       );
       alert(`成功標記 ${selectedGateways.length} 個接收點`);
       setSelectedGateways([]);
@@ -97,35 +97,41 @@ export const GatewayListModal = ({
       loadGateways();
       loadAvailableGateways();
     } catch (error: any) {
-      alert(error.response?.data?.message || '標記失敗');
+      alert(error.response?.data?.message || "標記失敗");
     }
   };
 
   // 過濾可用的接收點（根據搜尋詞）
-  const filteredAvailableGateways = availableGateways.filter((gateway) =>
-    gateway.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    gateway.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (gateway.location && gateway.location.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredAvailableGateways = availableGateways.filter(
+    (gateway) =>
+      gateway.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      gateway.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (gateway.location &&
+        gateway.location.toLowerCase().includes(searchTerm.toLowerCase())),
   );
 
   const getTypeLabel = (type: string) => {
     const labels = {
-      GENERAL: '一般接收點',
-      BOUNDARY: '邊界點',
-      MOBILE: '移動接收點',
+      SCHOOL_ZONE: "學區",
+      SAFE_ZONE: "安全區",
+      OBSERVE_ZONE: "觀察區",
+      INACTIVE: "停用",
     };
     return labels[type as keyof typeof labels] || type;
   };
 
   const getTypeBadge = (type: string) => {
     const styles = {
-      GENERAL: 'bg-blue-100 text-blue-800',
-      BOUNDARY: 'bg-red-100 text-red-800',
-      MOBILE: 'bg-green-100 text-green-800',
+      SCHOOL_ZONE: "bg-yellow-100 text-yellow-800",
+      SAFE_ZONE: "bg-green-100 text-green-800",
+      OBSERVE_ZONE: "bg-blue-100 text-blue-800",
+      INACTIVE: "bg-gray-100 text-gray-800",
     };
 
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[type as keyof typeof styles] || styles.GENERAL}`}>
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[type as keyof typeof styles] || "bg-gray-100 text-gray-800"}`}
+      >
         {getTypeLabel(type)}
       </span>
     );
@@ -180,7 +186,8 @@ export const GatewayListModal = ({
           <div className="bg-white px-6 py-4">
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                💡 <strong>提示：</strong>接收點不需要分配到社區，可接收所有設備訊號。
+                <strong>提示：</strong>
+                接收點不需要分配到社區，可接收所有設備訊號。
                 這裡顯示的是標記在此社區範圍內的接收點，僅用於位置管理。
               </p>
             </div>
@@ -216,11 +223,11 @@ export const GatewayListModal = ({
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               gateway.isActive
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
                             }`}
                           >
-                            {gateway.isActive ? '啟用' : '停用'}
+                            {gateway.isActive ? "啟用" : "停用"}
                           </span>
                         </div>
 
@@ -235,7 +242,9 @@ export const GatewayListModal = ({
                           {gateway.location && (
                             <div className="flex items-center">
                               <MapPin className="w-4 h-4 text-gray-400 mr-1" />
-                              <span className="text-gray-600">{gateway.location}</span>
+                              <span className="text-gray-600">
+                                {gateway.location}
+                              </span>
                             </div>
                           )}
 
@@ -243,27 +252,30 @@ export const GatewayListModal = ({
                             <div className="col-span-2">
                               <span className="text-gray-600">GPS 座標：</span>
                               <span className="ml-2 text-gray-900">
-                                {gateway.latitude.toFixed(6)}, {gateway.longitude.toFixed(6)}
+                                {gateway.latitude.toFixed(6)},{" "}
+                                {gateway.longitude.toFixed(6)}
                               </span>
                             </div>
                           )}
                         </div>
 
-                        {gateway.type === 'MOBILE' && (
-                          <div className="mt-2 text-xs text-gray-500">
-                            📱 移動式接收點（如志工手機）
+                        {gateway.type === "SCHOOL_ZONE" && (
+                          <div className="mt-2 text-xs text-yellow-600">
+                            📚 學區接收點
                           </div>
                         )}
 
-                        {gateway.type === 'BOUNDARY' && (
-                          <div className="mt-2 text-xs text-red-600">
-                            ⚠️ 邊界點 - 會觸發邊界警報
+                        {gateway.type === "INACTIVE" && (
+                          <div className="mt-2 text-xs text-gray-500">
+                            此接收點已停用
                           </div>
                         )}
                       </div>
                       <div className="ml-4">
                         <button
-                          onClick={() => handleRemoveTag(gateway.id, gateway.name)}
+                          onClick={() =>
+                            handleRemoveTag(gateway.id, gateway.name)
+                          }
                           className="flex items-center space-x-1 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="移除社區標籤"
                         >
@@ -351,7 +363,7 @@ export const GatewayListModal = ({
                       <>
                         <p>找不到符合「{searchTerm}」的接收點</p>
                         <button
-                          onClick={() => setSearchTerm('')}
+                          onClick={() => setSearchTerm("")}
                           className="text-primary-600 hover:text-primary-700 text-sm mt-2"
                         >
                           清除搜尋
@@ -417,7 +429,7 @@ export const GatewayListModal = ({
                       onClick={() => {
                         setShowAddModal(false);
                         setSelectedGateways([]);
-                        setSearchTerm('');
+                        setSearchTerm("");
                       }}
                       className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                     >

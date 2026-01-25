@@ -7,6 +7,7 @@
 ### ✅ 已完成項目
 
 #### 1. 型別定義更新
+
 - **檔案:** `src/types/index.ts`
 - **新增型別:**
   - `PoolType`: 設備池類型 (TENANT | PUBLIC)
@@ -18,18 +19,20 @@
   - `Gateway`: 新增 `poolType`, `tenantId` 改為可選
 
 #### 2. 新增 Cloud Functions APIs (10 個)
+
 - **目錄:** `functions/src/mapApp/`
 
-| API 檔案 | 功能 | HTTP 方法 |
-|---------|------|----------|
-| `auth.ts` | 用戶註冊/登入 | POST |
-| `fcmToken.ts` | FCM Token 管理 | POST |
-| `deviceBinding.ts` | 設備綁定/解綁 | POST |
-| `gateways.ts` | 公共接收點查詢 | GET |
-| `notificationPoints.ts` | 通知點位 CRUD | POST/GET/PUT/DELETE |
-| `activities.ts` | 活動歷史查詢 | GET |
+| API 檔案                | 功能           | HTTP 方法           |
+| ----------------------- | -------------- | ------------------- |
+| `auth.ts`               | 用戶註冊/登入  | POST                |
+| `fcmToken.ts`           | FCM Token 管理 | POST                |
+| `deviceBinding.ts`      | 設備綁定/解綁  | POST                |
+| `gateways.ts`           | 公共接收點查詢 | GET                 |
+| `notificationPoints.ts` | 通知點位 CRUD  | POST/GET/PUT/DELETE |
+| `activities.ts`         | 活動歷史查詢   | GET                 |
 
 #### 3. 擴充現有功能
+
 - **檔案:** `functions/src/beacon/receiveBeaconData.ts`
 - **新增函數:** `handleMapUserBeacon()`
 - **修改函數:** `processBeacon()` - 支援地圖用戶模式
@@ -39,6 +42,7 @@
   - 檢查通知點位並發送 FCM 推播
 
 #### 4. 文檔
+
 - `MAP_APP_API_ENDPOINTS.md`: 完整 API 文檔
 - `MAP_APP_DEPLOYMENT_GUIDE.md`: 本部署指南
 
@@ -154,6 +158,7 @@ curl -X POST https://us-central1-safe-net-tw.cloudfunctions.net/mapUserAuth \
 ### 3. 新增 Firestore Collections
 
 這些 Collections 會在第一次使用時自動建立：
+
 - `mapAppUsers`
 - `mapUserNotificationPoints`
 - `mapUserActivities`
@@ -171,63 +176,67 @@ match /mapAppUsers/{userId} {
 }
 
 match /mapUserNotificationPoints/{pointId} {
-  allow read, write: if request.auth != null && 
+  allow read, write: if request.auth != null &&
     request.auth.uid == resource.data.mapAppUserId;
 }
 
 match /mapUserActivities/{activityId} {
-  allow read: if request.auth != null && 
+  allow read: if request.auth != null &&
     request.auth.uid == resource.data.mapAppUserId;
   allow write: if false; // Only backend can write
 }
 ```
 
 部署 Rules：
+
 ```bash
 firebase deploy --only firestore:rules
 ```
 
 ---
 
-## 📱 客戶端整合範例
+## 客戶端整合範例
 
 ### React Native / Expo 範例
 
 ```javascript
-import firebase from 'firebase/app';
-import 'firebase/auth';
-import 'firebase/messaging';
+import firebase from "firebase/app";
+import "firebase/auth";
+import "firebase/messaging";
 
 // 1. 初始化 Firebase
-const firebaseConfig = { /* your config */ };
+const firebaseConfig = {
+  /* your config */
+};
 firebase.initializeApp(firebaseConfig);
 
 // 2. 用戶註冊
 async function registerUser(email, password, name) {
   // 使用 Firebase Auth 註冊
-  const userCredential = await firebase.auth()
+  const userCredential = await firebase
+    .auth()
     .createUserWithEmailAndPassword(email, password);
-  
+
   // 取得 ID Token
   const idToken = await userCredential.user.getIdToken();
-  
+
   // 註冊到地圖 APP 系統
   const response = await fetch(
-    'https://us-central1-safe-net-tw.cloudfunctions.net/mapUserAuth',
+    "https://us-central1-safe-net-tw.cloudfunctions.net/mapUserAuth",
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
       },
       body: JSON.stringify({
-        action: 'register',
+        action: "register",
         name: name,
-        email: email
-      })
-    }
+        email: email,
+      }),
+    },
   );
-  
+
   return await response.json();
 }
 
@@ -236,20 +245,20 @@ async function updateFcmToken() {
   const user = firebase.auth().currentUser;
   const idToken = await user.getIdToken();
   const fcmToken = await firebase.messaging().getToken();
-  
+
   await fetch(
-    'https://us-central1-safe-net-tw.cloudfunctions.net/updateMapUserFcmToken',
+    "https://us-central1-safe-net-tw.cloudfunctions.net/updateMapUserFcmToken",
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
       },
       body: JSON.stringify({
         userId: user.uid,
-        fcmToken: fcmToken
-      })
-    }
+        fcmToken: fcmToken,
+      }),
+    },
   );
 }
 
@@ -257,29 +266,29 @@ async function updateFcmToken() {
 async function bindDevice(deviceId) {
   const user = firebase.auth().currentUser;
   const idToken = await user.getIdToken();
-  
+
   const response = await fetch(
-    'https://us-central1-safe-net-tw.cloudfunctions.net/bindDeviceToMapUser',
+    "https://us-central1-safe-net-tw.cloudfunctions.net/bindDeviceToMapUser",
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
       },
       body: JSON.stringify({
         userId: user.uid,
-        deviceId: deviceId
-      })
-    }
+        deviceId: deviceId,
+      }),
+    },
   );
-  
+
   return await response.json();
 }
 
 // 5. 取得公共接收點
 async function getPublicGateways() {
   const response = await fetch(
-    'https://us-central1-safe-net-tw.cloudfunctions.net/getPublicGateways'
+    "https://us-central1-safe-net-tw.cloudfunctions.net/getPublicGateways",
   );
   return await response.json();
 }
@@ -288,24 +297,24 @@ async function getPublicGateways() {
 async function addNotificationPoint(gatewayId, name, message) {
   const user = firebase.auth().currentUser;
   const idToken = await user.getIdToken();
-  
+
   const response = await fetch(
-    'https://us-central1-safe-net-tw.cloudfunctions.net/addMapUserNotificationPoint',
+    "https://us-central1-safe-net-tw.cloudfunctions.net/addMapUserNotificationPoint",
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
       },
       body: JSON.stringify({
         userId: user.uid,
         gatewayId: gatewayId,
         name: name,
-        notificationMessage: message
-      })
-    }
+        notificationMessage: message,
+      }),
+    },
   );
-  
+
   return await response.json();
 }
 
@@ -313,23 +322,23 @@ async function addNotificationPoint(gatewayId, name, message) {
 async function getActivities(startTime, endTime, limit = 100) {
   const user = firebase.auth().currentUser;
   const idToken = await user.getIdToken();
-  
+
   const params = new URLSearchParams({
     userId: user.uid,
     startTime: startTime.toString(),
     endTime: endTime.toString(),
-    limit: limit.toString()
+    limit: limit.toString(),
   });
-  
+
   const response = await fetch(
     `https://us-central1-safe-net-tw.cloudfunctions.net/getMapUserActivities?${params}`,
     {
       headers: {
-        'Authorization': `Bearer ${idToken}`
-      }
-    }
+        Authorization: `Bearer ${idToken}`,
+      },
+    },
   );
-  
+
   return await response.json();
 }
 ```
@@ -339,22 +348,26 @@ async function getActivities(startTime, endTime, limit = 100) {
 ## ⚠️ 注意事項
 
 ### 1. 相容性保證
+
 - ✅ 現有後台功能完全不受影響
 - ✅ LIFF APP 功能完全不受影響
 - ✅ Tenant-Elder 系統繼續正常運作
 - ✅ 所有現有 API 保持相同行為
 
 ### 2. 資料隔離
+
 - 地圖用戶使用獨立的 Collections
 - Device 和 Gateway 透過 `poolType` 欄位區分
 - 不會有資料混淆或衝突
 
 ### 3. receiveBeaconData 行為
+
 - 當設備 `poolType === 'PUBLIC'` 且有 `mapAppUserId`：處理地圖用戶邏輯
 - 當設備有 `elderId`：處理 Tenant-Elder 邏輯（原有行為）
 - 兩種模式互不干擾
 
 ### 4. 效能考量
+
 - 新增的處理邏輯不會影響現有系統效能
 - 地圖用戶的 Beacon 處理是獨立分支
 - 只在必要時才執行額外查詢
@@ -366,6 +379,7 @@ async function getActivities(startTime, endTime, limit = 100) {
 部署後建議執行以下測試：
 
 ### 後端測試
+
 - [ ] 所有新 Functions 都成功部署
 - [ ] `getPublicGateways` API 可正常存取
 - [ ] 用戶註冊流程正常
@@ -375,12 +389,14 @@ async function getActivities(startTime, endTime, limit = 100) {
 - [ ] 活動記錄查詢正常
 
 ### 整合測試
+
 - [ ] receiveBeaconData 接收地圖用戶設備時正常記錄
 - [ ] 經過通知點位時正確發送 FCM 推播
 - [ ] 地圖用戶設備不會觸發 Tenant-Elder 的邏輯
 - [ ] Tenant-Elder 設備不會觸發地圖用戶邏輯
 
 ### 現有功能驗證
+
 - [ ] 後台管理功能正常
 - [ ] LIFF APP 功能正常
 - [ ] 長者位置追蹤正常
@@ -407,6 +423,7 @@ firebase functions:log --only mapUserAuth
 ### 關鍵日誌訊息
 
 成功的地圖用戶 Beacon 處理會看到：
+
 ```
 Processing beacon for map app user {userId}
 Recorded map user activity: {activityId} for user {userId}
@@ -436,6 +453,7 @@ firebase deploy --only functions
 ## 📞 技術支援
 
 ### 相關文檔
+
 - API 文檔: `MAP_APP_API_ENDPOINTS.md`
 - 現有 API 文檔: `API_ENDPOINTS.md`
 - Firebase Console: https://console.firebase.google.com/project/safe-net-tw

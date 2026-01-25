@@ -18,15 +18,17 @@
 ## ✨ 主要功能
 
 ### 管理功能
+
 - 🏢 **社區管理** - 多社區支援，成員管理
 - 👴 **長者管理** - 長者資料、活動追蹤
-- 📱 **設備管理** - BLE 設備綁定與監控
+- **設備管理** - BLE 設備綁定與監控
 - 📡 **閘道器管理** - 接收點配置與管理
 - 🚨 **警報管理** - 即時警報處理與追蹤
 - 👥 **用戶管理** - 管理員權限控制
 - 📊 **儀表板** - 系統總覽與統計
 
 ### 技術特點
+
 - ⚡ **即時同步** - 所有資料變更自動推送
 - 🔐 **安全認證** - Firebase Authentication
 - 📴 **離線支援** - Firestore 離線快取
@@ -49,6 +51,7 @@ npm install
 在運行應用之前，您需要完成 Firebase 設置：
 
 1. **閱讀設置指南**
+
    ```bash
    cat FIREBASE_SETUP.md
    ```
@@ -175,7 +178,7 @@ useEffect(() => {
   const unsubscribe = tenantService.subscribe((data) => {
     setTenants(data);
   });
-  
+
   return () => unsubscribe(); // 清理訂閱
 }, []);
 ```
@@ -196,38 +199,53 @@ useEffect(() => {
 ```typescript
 export const myService = {
   // 獲取列表（分頁）
-  getAll: async (page, limit) => { /* ... */ },
-  
+  getAll: async (page, limit) => {
+    /* ... */
+  },
+
   // 訂閱列表（即時監聽）
-  subscribe: (callback) => { /* ... */ },
-  
+  subscribe: (callback) => {
+    /* ... */
+  },
+
   // 獲取單個
-  getOne: async (id) => { /* ... */ },
-  
+  getOne: async (id) => {
+    /* ... */
+  },
+
   // 創建
-  create: async (data) => { /* ... */ },
-  
+  create: async (data) => {
+    /* ... */
+  },
+
   // 更新
-  update: async (id, data) => { /* ... */ },
-  
+  update: async (id, data) => {
+    /* ... */
+  },
+
   // 刪除
-  delete: async (id) => { /* ... */ },
+  delete: async (id) => {
+    /* ... */
+  },
 };
 ```
 
 ## ⚠️ 注意事項
 
 ### 安全規則
+
 - 目前使用開放的安全規則（開發用）
 - **生產環境前必須更新安全規則**
 - 參考 `FIREBASE_SETUP.md` 中的生產環境規則
 
 ### 成本優化
+
 - Firestore 按讀寫次數計費
 - 即時監聽會增加讀取次數
 - 建議使用查詢限制和快取
 
 ### 索引
+
 - 複合查詢需要建立索引
 - Firebase 會在錯誤訊息中提供索引創建連結
 - 點擊連結即可自動創建
@@ -240,16 +258,19 @@ export const myService = {
 ## 🐛 故障排除
 
 ### 登入失敗
+
 - 確認 Firebase Authentication 已啟用電子郵件/密碼登入
 - 確認已創建測試用戶
 - 確認 Firestore 中有對應的用戶資料
 
 ### 無法讀取資料
+
 - 檢查 Firestore 安全規則
 - 確認網路連接
 - 檢查瀏覽器控制台錯誤
 
 ### 索引錯誤
+
 - 點擊錯誤訊息中的連結創建索引
 - 等待索引創建完成（通常幾分鐘）
 
@@ -268,4 +289,5 @@ export const myService = {
 ---
 
 **注意**: 本系統已從 REST API 完全遷移到 Firebase。所有功能都使用 Firebase Authentication 和 Firestore Database。
+
 # safe-net-admin
