@@ -13,8 +13,6 @@ import { DevicesPage } from './pages/DevicesPage';
 import { DeviceDetailPage } from './pages/DeviceDetailPage';
 import { UUIDsPage } from './pages/UUIDsPage';
 import { GatewaysPage } from './pages/GatewaysPage';
-import { AlertsPage } from './pages/AlertsPage';
-import BeaconTestPage from './pages/BeaconTestPage';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
@@ -65,8 +63,6 @@ function App() {
           <Route path="devices/:id" element={<DeviceDetailPage />} />
           <Route path="uuids" element={<UUIDsPage />} />
           <Route path="gateways" element={<GatewaysPage />} />
-          <Route path="alerts" element={<AlertsPage />} />
-          <Route path="beacon-test" element={<BeaconTestPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

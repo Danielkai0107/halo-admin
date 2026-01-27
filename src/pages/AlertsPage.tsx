@@ -150,17 +150,17 @@ export const AlertsPage = () => {
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">警報管理</h1>
-          <p className="text-gray-600 mt-1">查看和處理所有警報事件</p>
+          <h2 className="text-2xl font-bold text-gray-900">警報管理</h2>
+          <p className="text-sm text-gray-600 mt-1">查看和處理所有警報事件</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex items-center space-x-4">
+      <div className="flex items-center space-x-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input

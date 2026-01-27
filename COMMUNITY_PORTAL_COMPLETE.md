@@ -1,12 +1,13 @@
-# 社區管理網頁版 - 完成總結
+# Line OA 管理網頁版 - 完成總結
 
 ## 專案完成狀態
 
 所有功能已實作完成並成功編譯！
 
 ### 建置狀態
+
 - ✅ Admin 管理後台（含 SaaS 用戶管理）
-- ✅ Community Portal（社區管理網頁版）
+- ✅ Community Portal（Line OA 管理網頁版）
 - ✅ Cloud Functions（含通知點支援）
 
 ---
@@ -18,6 +19,7 @@
 **訪問路徑**：`/saas-users`（側邊欄盾牌圖示）
 
 **功能**：
+
 - [x] 查看所有 SaaS 用戶列表（即時訂閱）
 - [x] 新增用戶（Email/密碼註冊）
 - [x] 編輯用戶資訊
@@ -26,6 +28,7 @@
 - [x] 統計資訊顯示
 
 **技術實作**：
+
 - 自動建立 Firebase Auth 帳號
 - 文件 ID 使用 Firebase UID
 - 即時監聽 Firestore 變更
@@ -33,17 +36,19 @@
 
 ---
 
-### 2. Community Portal - 社區管理網頁版
+### 2. Community Portal - Line OA 管理網頁版
 
 **訪問路徑**：`http://localhost:3002/community/`
 
 #### 認證系統
+
 - [x] Email/密碼登入
 - [x] 使用 saas_users 集合
 - [x] 自動載入社區資料
 - [x] 權限驗證
 
 #### 長者管理
+
 - [x] 查看長者列表（即時訂閱）
 - [x] 查看長者詳情
 - [x] 新增長者
@@ -52,18 +57,21 @@
 - [x] 顯示設備狀態（電池、信號）
 
 #### 設備清單（唯讀）
+
 - [x] 根據 tags 篩選社區設備
 - [x] 顯示綁定狀態
 - [x] 顯示電池電量、信號強度
 - [x] 篩選器（全部/已綁定/未綁定）
 
 #### 通知記錄
+
 - [x] 查看已發送 LINE 通知的記錄
 - [x] 日期範圍篩選
 - [x] 按長者篩選
 - [x] 顯示通知詳情
 
 #### 通知點管理
+
 - [x] 查看通知點列表
 - [x] 新增通知點（選擇 gateway）
 - [x] 編輯通知點（名稱、訊息）
@@ -77,6 +85,7 @@
 **修改的檔案**：`functions/src/beacon/receiveBeaconData.ts`
 
 **新增功能**：
+
 - [x] 檢查 gateway 是否為通知點
 - [x] 發送自訂通知訊息
 - [x] 記錄通知點 ID 到活動記錄
@@ -87,6 +96,7 @@
 ### 4. Firestore Security Rules
 
 **已新增規則**：
+
 - [x] saas_users 集合權限
 - [x] tenantNotificationPoints 集合權限
 - [x] elders 集合（SaaS 用戶權限）
@@ -94,6 +104,7 @@
 - [x] gateways 集合（SaaS 用戶唯讀）
 
 **安全性**：
+
 - 限制只能存取所屬社區的資料
 - ADMIN 角色才能編輯
 - 跨社區存取被阻擋
@@ -138,7 +149,7 @@ tenantNotificationPoints
 
 ## 快速測試流程
 
-### 測試 1: 建立社區管理員
+### 測試 1: 建立Line OA 管理員
 
 1. 啟動 Admin：`npm run dev`
 2. 登入後訪問：`http://localhost:3000/saas-users`
@@ -215,7 +226,7 @@ admin/
 │   └── types/
 │       └── index.ts              # 修改：新增 SaasUser 類型
 │
-├── community-portal/             # 新建：社區管理網頁版
+├── community-portal/             # 新建：Line OA 管理網頁版
 │   ├── src/
 │   │   ├── config/              # Firebase 配置
 │   │   ├── hooks/               # useAuth 等
@@ -246,12 +257,14 @@ admin/
 ## 統計
 
 ### 程式碼量
+
 - **Admin 新增**：2 個檔案，約 450 行
 - **Community Portal**：43 個檔案，約 2,500 行
 - **Cloud Functions**：修改 1 個檔案，新增 150 行
 - **文檔**：8 個 MD 檔案，約 1,500 行
 
 ### 建置結果
+
 - Admin: 995 KB (gzip: 280 KB)
 - Community Portal: 652 KB (gzip: 201 KB)
 - Functions: 222 KB
@@ -260,15 +273,15 @@ admin/
 
 ## 系統對比
 
-| 項目 | Admin | LIFF | Community Portal |
-|------|-------|------|------------------|
-| 用戶集合 | users | appUsers | saas_users |
-| 登入方式 | Email/密碼 | LINE | Email/密碼 |
-| 權限範圍 | 所有社區 | 所屬社區 | 所屬社區 |
-| 主要功能 | 系統管理 | 查看長者/警報 | 管理長者/通知點 |
-| 目標用戶 | 總公司人員 | 社區成員 | 社區管理員 |
-| 部署路徑 | / | /liff | /community |
-| Port | 3000 | 3001 | 3002 |
+| 項目     | Admin      | LIFF          | Community Portal |
+| -------- | ---------- | ------------- | ---------------- |
+| 用戶集合 | users      | appUsers      | saas_users       |
+| 登入方式 | Email/密碼 | LINE          | Email/密碼       |
+| 權限範圍 | 所有社區   | 所屬社區      | 所屬社區         |
+| 主要功能 | 系統管理   | 查看長者/警報 | 管理長者/通知點  |
+| 目標用戶 | 總公司人員 | 社區成員      | Line OA 管理員   |
+| 部署路徑 | /          | /liff         | /community       |
+| Port     | 3000       | 3001          | 3002             |
 
 ---
 
@@ -310,16 +323,19 @@ admin/
 ## 後續優化建議
 
 ### 優先級高
+
 1. Cloud Function 實現密碼重設 API
 2. 在 Admin 介面加入密碼重設按鈕
 3. 批次匯入功能（CSV）
 
 ### 優先級中
+
 1. 多社區支援
 2. 活動日誌記錄
 3. Email 通知（帳號建立、密碼重設）
 
 ### 優先級低
+
 1. 頭像上傳功能
 2. 個人資料編輯頁面
 3. 深色模式
@@ -392,13 +408,13 @@ npm run build && cd community-portal && npm run build && cd .. && firebase deplo
 
 ## 重要文檔
 
-| 文檔 | 用途 |
-|------|------|
-| SAAS_USERS_QUICK_GUIDE.md | 快速開始指南（推薦先看） |
-| SAAS_USERS_MANAGEMENT.md | SaaS 用戶管理完整說明 |
+| 文檔                      | 用途                      |
+| ------------------------- | ------------------------- |
+| SAAS_USERS_QUICK_GUIDE.md | 快速開始指南（推薦先看）  |
+| SAAS_USERS_MANAGEMENT.md  | SaaS 用戶管理完整說明     |
 | COMMUNITY_PORTAL_SETUP.md | Community Portal 設置指南 |
-| CREATE_TEST_ACCOUNT.md | 測試帳號建立詳細說明 |
-| DEPLOYMENT_GUIDE.md | 完整部署指南 |
+| CREATE_TEST_ACCOUNT.md    | 測試帳號建立詳細說明      |
+| DEPLOYMENT_GUIDE.md       | 完整部署指南              |
 
 ---
 
@@ -416,7 +432,7 @@ admin/
 ├── liff/                    # LINE LIFF App（Port 3001）
 │   └── (社區成員使用 LINE 登入)
 │
-├── community-portal/        # 社區管理網頁版（Port 3002）← 全新專案
+├── community-portal/        # Line OA 管理網頁版（Port 3002）← 全新專案
 │   ├── src/
 │   │   ├── screens/
 │   │   │   ├── login/            # 登入頁面
@@ -440,29 +456,31 @@ admin/
 ## 下一步行動
 
 1. **立即測試**
+
    ```bash
    npm run dev
    # 登入 Admin → 建立 SaaS 用戶 → 登入 Community Portal
    ```
 
 2. **部署到生產環境**
+
    ```bash
    ./deploy-all.sh
    ```
 
 3. **建立實際帳號**
    - 為每個社區建立管理員帳號
-   - 提供登入資訊給社區管理員
+   - 提供登入資訊給Line OA 管理員
 
 4. **培訓使用者**
-   - 社區管理員如何使用 Community Portal
+   - Line OA 管理員如何使用 Community Portal
    - 如何新增長者、設定通知點
 
 ---
 
 ## 成就解鎖
 
-- ✅ 完整的三層架構（總公司/社區管理/社區成員）
+- ✅ 完整的三層架構（總公司/Line OA 管理/社區成員）
 - ✅ 統一的 Firebase 後端
 - ✅ 清晰的權限分層
 - ✅ 完善的文檔系統
@@ -471,6 +489,6 @@ admin/
 
 ---
 
-恭喜！社區管理網頁版已完全就緒，可以開始使用了！
+恭喜！Line OA 管理網頁版已完全就緒，可以開始使用了！
 
 參考 `SAAS_USERS_QUICK_GUIDE.md` 開始第一次測試。

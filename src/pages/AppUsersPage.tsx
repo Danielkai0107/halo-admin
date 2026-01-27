@@ -1,11 +1,11 @@
-import { useEffect, useState, useMemo } from 'react';
-import { Edit, Trash2, UserX, UserCheck, Building2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { appUserService } from '../services/appUserService';
-import { tenantService } from '../services/tenantService';
-import type { Tenant } from '../types';
-import { Modal } from '../components/Modal';
-import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useEffect, useState, useMemo } from "react";
+import { Edit, Trash2, UserX, UserCheck, Building2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { appUserService } from "../services/appUserService";
+import { tenantService } from "../services/tenantService";
+import type { Tenant } from "../types";
+import { Modal } from "../components/Modal";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 interface AppUser {
   id: string;
@@ -33,41 +33,49 @@ export const AppUsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  
+
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [deletingUser, setDeletingUser] = useState<AppUser | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
 
   // 計算合併後的用戶資料
   const enrichedUsers = useMemo(() => {
-    return users.map(user => {
+    return users.map((user) => {
       // 1. 優先使用 joinedFromTenantId (從 LINE 加入時記錄的)
-      const primaryTenant = user.joinedFromTenantId 
-        ? tenants.find(t => t.id === user.joinedFromTenantId)
+      const primaryTenant = user.joinedFromTenantId
+        ? tenants.find((t) => t.id === user.joinedFromTenantId)
         : null;
 
       // 2. 為了相容性，也處理 tenantMemberships (如果有帶入的話)
       const memberships = user.tenantMemberships || [];
-      if (primaryTenant && !memberships.find(m => m.tenantId === primaryTenant.id)) {
+      if (
+        primaryTenant &&
+        !memberships.find((m) => m.tenantId === primaryTenant.id)
+      ) {
         memberships.push({
           tenantId: primaryTenant.id,
-          role: 'MEMBER',
-          tenant: primaryTenant
+          role: "MEMBER",
+          tenant: primaryTenant,
         });
       }
 
       return {
         ...user,
-        tenantMemberships: memberships
+        tenantMemberships: memberships,
       };
     });
   }, [users, tenants]);
 
   useEffect(() => {
     setLoading(true);
-    
+
     // 訂閱 App 用戶列表（即時監聽）
     const unsubscribeUsers = appUserService.subscribe((data) => {
       setUsers(data as AppUser[]);
@@ -95,21 +103,21 @@ export const AppUsersPage = () => {
     setEditingUser(user);
     reset({
       name: user.name,
-      phone: user.phone || '',
-      avatar: user.avatar || '',
+      phone: user.phone || "",
+      avatar: user.avatar || "",
     });
     setShowModal(true);
   };
 
   const handleDelete = async () => {
     if (!deletingUser) return;
-    
+
     try {
       await appUserService.delete(deletingUser.id);
-      alert('刪除成功');
+      alert("刪除成功");
       loadUsers();
     } catch (error: any) {
-      alert(error.response?.data?.message || '刪除失敗');
+      alert(error.response?.data?.message || "刪除失敗");
     }
     setDeletingUser(null);
   };
@@ -117,10 +125,10 @@ export const AppUsersPage = () => {
   const handleToggleActive = async (user: AppUser) => {
     try {
       await appUserService.toggleActive(user.id);
-      alert(user.isActive ? '已停用用戶' : '已啟用用戶');
+      alert(user.isActive ? "已停用用戶" : "已啟用用戶");
       loadUsers();
     } catch (error: any) {
-      alert(error.response?.data?.message || '操作失敗');
+      alert(error.response?.data?.message || "操作失敗");
     }
   };
 
@@ -129,11 +137,11 @@ export const AppUsersPage = () => {
 
     try {
       await appUserService.update(editingUser.id, data);
-      alert('更新成功');
+      alert("更新成功");
       setShowModal(false);
       loadUsers();
     } catch (error: any) {
-      alert(error.response?.data?.message || '操作失敗');
+      alert(error.response?.data?.message || "操作失敗");
     }
   };
 
@@ -144,12 +152,16 @@ export const AppUsersPage = () => {
   const totalPages = Math.ceil(total / 10);
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">LINE 用戶管理</h1>
-          <p className="text-gray-600 mt-1">管理所有透過 LINE 加入的用戶（全局管理）</p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Line 用戶管理管理
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            管理所有透過 LINE 加入的用戶（全局管理）
+          </p>
         </div>
       </div>
 
@@ -184,8 +196,8 @@ export const AppUsersPage = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center space-x-3">
                     {user.linePictureUrl ? (
-                      <img 
-                        src={user.linePictureUrl} 
+                      <img
+                        src={user.linePictureUrl}
                         alt={user.lineDisplayName || user.name}
                         className="w-10 h-10 rounded-full"
                       />
@@ -195,15 +207,20 @@ export const AppUsersPage = () => {
                       </div>
                     )}
                     <div>
-                      <div className="font-medium text-gray-900">{user.name}</div>
-                      {user.lineDisplayName && user.lineDisplayName !== user.name && (
-                        <div className="text-xs text-green-600 flex items-center space-x-1">
-                          <span>LINE:</span>
-                          <span>{user.lineDisplayName}</span>
-                        </div>
-                      )}
+                      <div className="font-medium text-gray-900">
+                        {user.name}
+                      </div>
+                      {user.lineDisplayName &&
+                        user.lineDisplayName !== user.name && (
+                          <div className="text-xs text-green-600 flex items-center space-x-1">
+                            <span>LINE:</span>
+                            <span>{user.lineDisplayName}</span>
+                          </div>
+                        )}
                       {user.phone && (
-                        <div className="text-sm text-gray-500">{user.phone}</div>
+                        <div className="text-sm text-gray-500">
+                          {user.phone}
+                        </div>
                       )}
                       {user.lineUserId && (
                         <div className="text-xs text-gray-400 font-mono">
@@ -217,18 +234,24 @@ export const AppUsersPage = () => {
                   {user.email}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {user.tenantMemberships && user.tenantMemberships.length > 0 ? (
+                  {user.tenantMemberships &&
+                  user.tenantMemberships.length > 0 ? (
                     <div className="text-sm">
                       {user.tenantMemberships.map((membership: any) => (
-                        <div key={membership.id} className="flex items-center space-x-2 mb-1">
+                        <div
+                          key={membership.id}
+                          className="flex items-center space-x-2 mb-1"
+                        >
                           <Building2 className="w-4 h-4 text-gray-400" />
                           <span>{membership.tenant.name}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs ${
-                            membership.role === 'ADMIN' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {membership.role === 'ADMIN' ? '管理員' : '成員'}
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs ${
+                              membership.role === "ADMIN"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {membership.role === "ADMIN" ? "管理員" : "成員"}
                           </span>
                         </div>
                       ))}
@@ -250,23 +273,29 @@ export const AppUsersPage = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {user.lastLoginAt
-                    ? new Date(user.lastLoginAt).toLocaleString('zh-TW')
-                    : '從未登入'}
+                    ? new Date(user.lastLoginAt).toLocaleString("zh-TW")
+                    : "從未登入"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end space-x-2">
                     <button
                       onClick={() => handleToggleActive(user)}
                       className={`${
-                        user.isActive ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'
+                        user.isActive
+                          ? "text-orange-600 hover:text-orange-900"
+                          : "text-green-600 hover:text-green-900"
                       }`}
-                      title={user.isActive ? '停用' : '啟用'}
+                      title={user.isActive ? "停用" : "啟用"}
                     >
-                      {user.isActive ? <UserX className="w-5 h-5" /> : <UserCheck className="w-5 h-5" />}
+                      {user.isActive ? (
+                        <UserX className="w-5 h-5" />
+                      ) : (
+                        <UserCheck className="w-5 h-5" />
+                      )}
                     </button>
                     <button
                       onClick={() => handleEdit(user)}
-                      className="text-indigo-600 hover:text-indigo-900"
+                      className="text-primary-600 hover:text-primary-700"
                       title="編輯"
                     >
                       <Edit className="w-5 h-5" />
@@ -289,7 +318,8 @@ export const AppUsersPage = () => {
       {/* Pagination */}
       <div className="flex items-center justify-between mt-6">
         <div className="text-sm text-gray-700">
-          顯示 {(page - 1) * 10 + 1} 到 {Math.min(page * 10, total)} 筆，共 {total} 筆 App 用戶
+          顯示 {(page - 1) * 10 + 1} 到 {Math.min(page * 10, total)} 筆，共{" "}
+          {total} 筆 App 用戶
         </div>
         <div className="flex space-x-2">
           <button
@@ -333,19 +363,21 @@ export const AppUsersPage = () => {
             <div>
               <label className="label">姓名 *</label>
               <input
-                {...register('name', { required: '請輸入姓名' })}
+                {...register("name", { required: "請輸入姓名" })}
                 className="input"
                 placeholder="請輸入姓名"
               />
               {errors.name && (
-                <p className="text-red-500 text-sm mt-1">{errors.name.message as string}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.name.message as string}
+                </p>
               )}
             </div>
 
             <div>
               <label className="label">電話</label>
               <input
-                {...register('phone')}
+                {...register("phone")}
                 type="tel"
                 className="input"
                 placeholder="0912-345-678"

@@ -398,11 +398,13 @@ export default function BeaconTestPage() {
   }, []);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Line 通知測試</h1>
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">Line 通知測試</h2>
+      </div>
 
       {/* Function URL 設定 */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Cloud Function 設定</h2>
         <div className="space-y-4">
           <div>
@@ -414,7 +416,7 @@ export default function BeaconTestPage() {
               value={functionUrl}
               onChange={(e) => setFunctionUrl(e.target.value)}
               placeholder="https://YOUR_REGION-YOUR_PROJECT.cloudfunctions.net/receiveBeaconData"
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
             />
             <p className="text-sm text-gray-500 mt-1">
               部署後從 Firebase Console 複製 Function URL
@@ -424,7 +426,7 @@ export default function BeaconTestPage() {
       </div>
 
       {/* 快速選擇 Gateway */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">快速選擇 Gateway</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {gateways.map((gateway) => (
@@ -434,7 +436,7 @@ export default function BeaconTestPage() {
               className={`p-4 border rounded-lg text-left hover:bg-gray-50 transition ${
                 testPayload.gateway_id ===
                 (gateway.macAddress || gateway.imei || gateway.serialNumber)
-                  ? "border-blue-500 bg-blue-50"
+                  ? "border-primary-500 bg-primary-50"
                   : "border-gray-300"
               }`}
             >
@@ -471,7 +473,7 @@ export default function BeaconTestPage() {
       </div>
 
       {/* 選擇設備（自動填入 Beacon 資料） */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">
           選擇設備（自動填入 Beacon 資料）
         </h2>
@@ -505,7 +507,7 @@ export default function BeaconTestPage() {
               </div>
               <button
                 onClick={() => setSelectedDevice(null)}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-primary-600 hover:text-primary-800"
               >
                 清除選擇
               </button>
@@ -519,7 +521,7 @@ export default function BeaconTestPage() {
               onClick={() => handleSelectDevice(device)}
               className={`p-4 border rounded-lg text-left hover:bg-gray-50 transition ${
                 selectedDevice?.id === device.id
-                  ? "border-blue-500 bg-blue-50"
+                  ? "border-primary-500 bg-primary-50"
                   : "border-gray-300"
               }`}
             >
@@ -558,7 +560,7 @@ export default function BeaconTestPage() {
       </div>
 
       {/* 快速測試面板 */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-lg p-8 mb-6 border-2 border-blue-200">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-lg p-8 border-2 border-blue-200">
         <h2 className="text-2xl font-bold mb-6 text-blue-900 flex items-center">
           <span className="mr-3">🚀</span>
           快速測試
@@ -661,7 +663,7 @@ export default function BeaconTestPage() {
 
       {/* 測試結果 */}
       {testResult && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">測試結果</h2>
           <div
             className={`p-4 rounded-lg ${
@@ -705,7 +707,7 @@ export default function BeaconTestPage() {
             <button
               onClick={loadLatestLocations}
               disabled={loadingData}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-primary-600 hover:text-primary-800"
             >
               🔄 重新載入
             </button>
@@ -767,7 +769,7 @@ export default function BeaconTestPage() {
             <button
               onClick={loadRecentAlerts}
               disabled={loadingData}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-primary-600 hover:text-primary-800"
             >
               🔄 重新載入
             </button>
@@ -835,7 +837,7 @@ export default function BeaconTestPage() {
       </div>
 
       {/* 使用說明 */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="font-semibold text-blue-900 mb-3">使用說明</h3>
         <ul className="space-y-2 text-sm text-blue-800">
           <li>1. 先在上方輸入已部署的 Cloud Function URL</li>

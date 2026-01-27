@@ -21,7 +21,7 @@
 
 **變更後:** 額外檢查 `elderId`，確保設備未被老人系統使用
 
-**原因:** 防止地圖 APP 用戶綁定已經分配給老人系統的設備，避免數據衝突
+**原因:** 防止Line 用戶管理綁定已經分配給老人系統的設備，避免數據衝突
 
 ### 3. 🔐 修復管理員權限問題
 
@@ -317,7 +317,7 @@ firebase deploy --only functions:bindDeviceToMapUser,functions:unbindDeviceFromM
 ## 📚 相關文檔
 
 - `MAP_APP_API_ENDPOINTS.md` - 完整 API 文檔
-- `MAP_APP_USERS_GUIDE.md` - 地圖 APP 用戶管理指南
+- `MAP_APP_USERS_GUIDE.md` - Line 用戶管理管理指南
 - `MAP_APP_DEPLOYMENT_GUIDE.md` - 部署指南
 
 ---
@@ -351,7 +351,7 @@ firebase deploy --only functions:bindDeviceToMapUser,functions:unbindDeviceFromM
 ```
 設備類型: [iBeacon ▼]
 池類型: [TENANT（社區專用）▼] *
-   PUBLIC 設備可被地圖 APP 用戶綁定
+   PUBLIC 設備可被Line 用戶管理綁定
 電量: [___] %
 ```
 

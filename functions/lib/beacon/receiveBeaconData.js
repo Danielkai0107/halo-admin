@@ -668,6 +668,11 @@ async function handleNotification(deviceId, device, beacon, gateway, lat, lng, t
                 return await handleMapUserNotification(deviceId, device.boundTo, beacon, gateway, lat, lng, timestamp, db);
             }
             return { triggered: false, type: null };
+        case "LINE_USER":
+            if (device.boundTo) {
+                return await handleLineUserNotification(deviceId, device.boundTo, beacon, gateway, lat, lng, timestamp, db);
+            }
+            return { triggered: false, type: null };
         case "UNBOUND":
         default:
             console.log(`Device ${deviceId} is unbound, no notification sent`);
@@ -925,6 +930,177 @@ async function handleMapUserNotification(deviceId, mapAppUserId, beacon, gateway
     }
     catch (error) {
         console.error(`Error in handleMapUserNotification for user ${mapAppUserId}:`, error);
+        return { triggered: false, type: null };
+    }
+}
+/**
+ * Handle LINE User notification (LINE + Alert)
+ */
+async function handleLineUserNotification(deviceId, lineUserDocId, beacon, gateway, lat, lng, timestamp, db) {
+    try {
+        // Skip notifications for OBSERVE_ZONE and INACTIVE gateways
+        if (gateway.type === "OBSERVE_ZONE" || gateway.type === "INACTIVE") {
+            console.log(`Skipping LINE notification for ${gateway.type} gateway (notification disabled for this type)`);
+            return { triggered: false, type: null };
+        }
+        // Get device data
+        const deviceDoc = await db.collection("devices").doc(deviceId).get();
+        const deviceData = deviceDoc.data();
+        // Check if gateway is in notification points (using inheritedNotificationPointIds)
+        const notificationPointIds = (deviceData === null || deviceData === void 0 ? void 0 : deviceData.inheritedNotificationPointIds) || [];
+        if (!notificationPointIds.includes(gateway.id)) {
+            console.log(`Gateway ${gateway.id} is not in LINE user's notification points`);
+            return { triggered: false, type: null };
+        }
+        console.log(`Gateway ${gateway.id} is in LINE user's notification points, triggering notification`);
+        // Get LINE user data
+        const lineUserDoc = await db
+            .collection("line_users")
+            .doc(lineUserDocId)
+            .get();
+        if (!lineUserDoc.exists) {
+            console.log(`LINE user ${lineUserDocId} not found`);
+            return { triggered: false, type: null };
+        }
+        const lineUserData = lineUserDoc.data();
+        const lineUserId = lineUserData === null || lineUserData === void 0 ? void 0 : lineUserData.lineUserId;
+        if (!lineUserId) {
+            console.log(`LINE user ${lineUserDocId} has no lineUserId, cannot send notification`);
+            return { triggered: false, type: null };
+        }
+        // Create alert record (only visible to this user)
+        const alertData = {
+            type: "NOTIFICATION_POINT",
+            deviceId: deviceId,
+            lineUserId: lineUserId,
+            gatewayId: gateway.id,
+            gatewayName: gateway.name || "未知位置",
+            latitude: lat,
+            longitude: lng,
+            title: `已通過：${gateway.name || "通知點"}`,
+            message: `您的設備已通過通知點`,
+            status: "PENDING",
+            triggeredAt: new Date(timestamp).toISOString(),
+            visibleTo: [lineUserId],
+            tenantId: null,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        const alertRef = await db.collection("alerts").add(alertData);
+        console.log(`Created alert ${alertRef.id} for LINE user ${lineUserId}`);
+        // Send LINE notification using LINE Messaging API
+        try {
+            // Get LINE Channel Access Token from tenant
+            // First, get the LINE user document to find their tenant
+            const lineUserDoc = await db
+                .collection("line_users")
+                .doc(lineUserDocId)
+                .get();
+            const lineUserData = lineUserDoc.data();
+            const joinedFromTenantId = lineUserData === null || lineUserData === void 0 ? void 0 : lineUserData.joinedFromTenantId;
+            if (!joinedFromTenantId) {
+                console.warn(`LINE user ${lineUserId} has no joinedFromTenantId, checking memberships...`);
+                // Try to find tenant from memberships
+                const tenantsSnapshot = await db.collection("tenants").get();
+                let foundTenantId = null;
+                for (const tenantDoc of tenantsSnapshot.docs) {
+                    const membersQuery = await db
+                        .collection("tenants")
+                        .doc(tenantDoc.id)
+                        .collection("members")
+                        .where("appUserId", "==", lineUserDocId)
+                        .where("status", "==", "APPROVED")
+                        .limit(1)
+                        .get();
+                    if (!membersQuery.empty) {
+                        foundTenantId = tenantDoc.id;
+                        break;
+                    }
+                }
+                if (!foundTenantId) {
+                    console.warn(`LINE user ${lineUserId} has no associated tenant, skipping LINE notification`);
+                    return {
+                        triggered: true,
+                        type: "LINE",
+                        pointId: gateway.id,
+                        details: {
+                            lineUserId: lineUserId,
+                            alertId: alertRef.id,
+                            gatewayName: gateway.name,
+                            message: alertData.message,
+                            reason: "No tenant found",
+                        },
+                    };
+                }
+                // Get tenant's LINE Channel Access Token
+                const tenantDoc = await db.collection("tenants").doc(foundTenantId).get();
+                const tenantData = tenantDoc.data();
+                const lineChannelAccessToken = tenantData === null || tenantData === void 0 ? void 0 : tenantData.lineChannelAccessToken;
+                if (!lineChannelAccessToken) {
+                    console.warn(`Tenant ${foundTenantId} has no LINE Channel Access Token`);
+                }
+                else {
+                    // Import sendNotificationPointAlert function
+                    const { sendNotificationPointAlert } = await Promise.resolve().then(() => __importStar(require("../line/sendMessage")));
+                    // Send LINE notification
+                    await sendNotificationPointAlert(lineUserId, lineChannelAccessToken, {
+                        gatewayName: gateway.name || "通知點",
+                        deviceNickname: (deviceData === null || deviceData === void 0 ? void 0 : deviceData.mapUserNickname) || undefined,
+                        latitude: lat,
+                        longitude: lng,
+                        timestamp: new Date(timestamp).toISOString(),
+                    });
+                    console.log(`Sent LINE notification to ${lineUserId} for gateway ${gateway.name}`);
+                }
+            }
+            else {
+                // Get tenant's LINE Channel Access Token
+                const tenantDoc = await db
+                    .collection("tenants")
+                    .doc(joinedFromTenantId)
+                    .get();
+                if (!tenantDoc.exists) {
+                    console.warn(`Tenant ${joinedFromTenantId} not found, skipping LINE notification`);
+                }
+                else {
+                    const tenantData = tenantDoc.data();
+                    const lineChannelAccessToken = tenantData === null || tenantData === void 0 ? void 0 : tenantData.lineChannelAccessToken;
+                    if (!lineChannelAccessToken) {
+                        console.warn(`Tenant ${joinedFromTenantId} has no LINE Channel Access Token`);
+                    }
+                    else {
+                        // Import sendNotificationPointAlert function
+                        const { sendNotificationPointAlert } = await Promise.resolve().then(() => __importStar(require("../line/sendMessage")));
+                        // Send LINE notification
+                        await sendNotificationPointAlert(lineUserId, lineChannelAccessToken, {
+                            gatewayName: gateway.name || "通知點",
+                            deviceNickname: (deviceData === null || deviceData === void 0 ? void 0 : deviceData.mapUserNickname) || undefined,
+                            latitude: lat,
+                            longitude: lng,
+                            timestamp: new Date(timestamp).toISOString(),
+                        });
+                        console.log(`Sent LINE notification to ${lineUserId} for gateway ${gateway.name} using tenant ${joinedFromTenantId}`);
+                    }
+                }
+            }
+        }
+        catch (lineError) {
+            console.error("Failed to send LINE notification:", lineError);
+            // Don't fail the whole operation if LINE notification fails
+        }
+        return {
+            triggered: true,
+            type: "LINE",
+            pointId: gateway.id,
+            details: {
+                lineUserId: lineUserId,
+                alertId: alertRef.id,
+                gatewayName: gateway.name,
+                message: alertData.message,
+            },
+        };
+    }
+    catch (error) {
+        console.error(`Error in handleLineUserNotification for user ${lineUserDocId}:`, error);
         return { triggered: false, type: null };
     }
 }

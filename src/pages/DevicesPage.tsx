@@ -1,6 +1,15 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Battery, Signal, Edit, Trash2, Download, Upload } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Battery,
+  Signal,
+  Edit,
+  Trash2,
+  Download,
+  Upload,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { deviceService } from "../services/deviceService";
 import { elderService } from "../services/elderService";
@@ -11,7 +20,7 @@ import { formatDistanceToNow } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import { Modal } from "../components/Modal";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
 export const DevicesPage = () => {
   const navigate = useNavigate();
@@ -26,6 +35,9 @@ export const DevicesPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [deletingDevice, setDeletingDevice] = useState<Device | null>(null);
+
+  // 篩選相關
+  const [filterTag, setFilterTag] = useState<string>("");
 
   // 批次選擇相關
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
@@ -119,12 +131,42 @@ export const DevicesPage = () => {
         device.bindingType === "ELDER" && device.boundTo
           ? elders.find((e) => e.id === device.boundTo)
           : undefined;
+
+      // 找到設備所屬的社區
+      const deviceTenant =
+        device.tags && device.tags.length > 0
+          ? tenants.find((t) => t.id === device.tags[0])
+          : undefined;
+
       return {
         ...device,
         elder,
+        tenant: deviceTenant,
       };
     });
-  }, [devices, elders]);
+  }, [devices, elders, tenants]);
+
+  // 根據篩選條件過濾設備
+  const filteredDevices = useMemo(() => {
+    if (!filterTag) return enrichedDevices;
+
+    if (filterTag === "NO_TAG") {
+      return enrichedDevices.filter((d) => !d.tags || d.tags.length === 0);
+    }
+
+    return enrichedDevices.filter((d) => d.tags && d.tags.includes(filterTag));
+  }, [enrichedDevices, filterTag]);
+
+  // 取得所有唯一的標籤（用於篩選選項）
+  const allTags = useMemo(() => {
+    const tagsSet = new Set<string>();
+    devices.forEach((device) => {
+      if (device.tags && device.tags.length > 0) {
+        device.tags.forEach((tag) => tagsSet.add(tag));
+      }
+    });
+    return Array.from(tagsSet);
+  }, [devices]);
 
   useEffect(() => {
     setLoading(true);
@@ -263,29 +305,32 @@ export const DevicesPage = () => {
         UUID: "",
         Major: "",
         Minor: "",
-        "設備類型": "IBEACON",
-        "所屬社區ID": "",
-        "電量": 100,
-        "備註": "UUID請從UUID管理中複製；設備類型可選：IBEACON, EDDYSTONE, GENERIC_BLE；所屬社區ID請從社區管理中複製"
-      }
+        設備類型: "IBEACON",
+        所屬社區ID: "",
+        電量: 100,
+        備註: "UUID請從UUID管理中複製；設備類型可選：IBEACON, EDDYSTONE, GENERIC_BLE；所屬社區ID請從Line OA 管理中複製",
+      },
     ];
 
     const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Beacon模板");
-    
+
     // 設置列寬
-    ws['!cols'] = [
+    ws["!cols"] = [
       { wch: 40 }, // UUID
       { wch: 10 }, // Major
       { wch: 10 }, // Minor
       { wch: 15 }, // 設備類型
       { wch: 20 }, // 所屬社區ID
       { wch: 10 }, // 電量
-      { wch: 60 }  // 備註
+      { wch: 60 }, // 備註
     ];
 
-    XLSX.writeFile(wb, `Beacon批次新增模板_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(
+      wb,
+      `Beacon批次新增模板_${new Date().toISOString().split("T")[0]}.xlsx`,
+    );
   };
 
   // 批次匯入 Beacon
@@ -327,11 +372,13 @@ export const DevicesPage = () => {
           const existingDevice = await deviceService.getByMajorMinor(
             row.UUID.toLowerCase(),
             Number(row.Major),
-            Number(row.Minor)
+            Number(row.Minor),
           );
 
           if (existingDevice.data) {
-            errors.push(`第 ${rowNum} 行：UUID + Major(${row.Major}) + Minor(${row.Minor}) 組合已存在`);
+            errors.push(
+              `第 ${rowNum} 行：UUID + Major(${row.Major}) + Minor(${row.Minor}) 組合已存在`,
+            );
             failed++;
             continue;
           }
@@ -357,7 +404,7 @@ export const DevicesPage = () => {
       }
 
       setImportResults({ success, failed, errors });
-      
+
       if (success > 0) {
         loadDevices();
       }
@@ -525,6 +572,12 @@ export const DevicesPage = () => {
             已綁定APP用戶
           </span>
         );
+      case "LINE_USER":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+            已綁定LINE用戶
+          </span>
+        );
       case "UNBOUND":
       default:
         return (
@@ -535,33 +588,17 @@ export const DevicesPage = () => {
     }
   };
 
-  const getDeviceTypeBadge = (type: string) => {
-    const styles = {
-      IBEACON: "bg-blue-100 text-blue-800",
-      EDDYSTONE: "bg-purple-100 text-purple-800",
-      GENERIC_BLE: "bg-gray-100 text-gray-800",
-    };
-
-    return (
-      <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[type as keyof typeof styles] || styles.GENERIC_BLE}`}
-      >
-        {type}
-      </span>
-    );
-  };
-
   if (loading) {
     return <div className="text-center py-12">載入中...</div>;
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Beacon 管理</h1>
-          <p className="text-gray-600 mt-1">
+          <h2 className="text-2xl font-bold text-gray-900">Beacon 管理</h2>
+          <p className="text-sm text-gray-600 mt-1">
             管理所有 Beacon 設備（UUID + Major + Minor 組合識別）
           </p>
         </div>
@@ -576,7 +613,7 @@ export const DevicesPage = () => {
           </button>
           <button
             onClick={() => setShowBatchImportModal(true)}
-            className="btn-secondary flex items-center space-x-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            className="btn-secondary flex items-center space-x-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50"
             title="批次匯入 Beacon"
           >
             <Upload className="w-5 h-5" />
@@ -608,9 +645,9 @@ export const DevicesPage = () => {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <div className="relative">
+      {/* Search and Filter */}
+      <div className="flex items-center space-x-4">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
@@ -618,6 +655,22 @@ export const DevicesPage = () => {
             className="input pl-10"
           />
         </div>
+        <select
+          value={filterTag}
+          onChange={(e) => setFilterTag(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[200px]"
+        >
+          <option value="">全部社區</option>
+          <option value="NO_TAG">無標籤</option>
+          {allTags.map((tag) => {
+            const tenant = tenants.find((t) => t.id === tag);
+            return (
+              <option key={tag} value={tag}>
+                {tenant ? `${tenant.name} (${tenant.code})` : tag}
+              </option>
+            );
+          })}
+        </select>
       </div>
 
       {/* Devices List */}
@@ -647,7 +700,7 @@ export const DevicesPage = () => {
                   綁定狀態
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                  設備類型
+                  所屬社區 / 狀態
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
                   電量
@@ -661,7 +714,7 @@ export const DevicesPage = () => {
               </tr>
             </thead>
             <tbody>
-              {enrichedDevices.map((device) => (
+              {filteredDevices.map((device: any) => (
                 <tr
                   key={device.id}
                   className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
@@ -717,7 +770,26 @@ export const DevicesPage = () => {
                     {getBindingStatusBadge(device)}
                   </td>
                   <td className="py-3 px-4">
-                    {getDeviceTypeBadge(device.type)}
+                    <div className="space-y-1">
+                      {device.tenant ? (
+                        <>
+                          <div className="flex items-center space-x-2">
+                            <code className="text-xs font-mono bg-blue-50 text-blue-800 px-2 py-1 rounded">
+                              {device.tenant.name}
+                            </code>
+                          </div>
+                          <div className="text-xs">
+                            {device.tenant.isActive ? (
+                              <span className="text-green-600">● 啟用中</span>
+                            ) : (
+                              <span className="text-gray-400">● 已停用</span>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-gray-400 text-xs">無標籤</span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
@@ -912,7 +984,7 @@ export const DevicesPage = () => {
               </select>
               {tenants.length === 0 && (
                 <p className="text-xs text-orange-600 mt-1">
-                  ⚠️ 尚未建立社區，請先前往「社區管理」新增
+                  ⚠️ 尚未建立社區，請先前往「Line OA 管理」新增
                 </p>
               )}
             </div>
@@ -1073,10 +1145,15 @@ export const DevicesPage = () => {
                 {/* 錯誤訊息 */}
                 {importResults.errors.length > 0 && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-h-64 overflow-y-auto">
-                    <h4 className="font-semibold text-red-900 mb-2">錯誤詳情：</h4>
+                    <h4 className="font-semibold text-red-900 mb-2">
+                      錯誤詳情：
+                    </h4>
                     <ul className="text-sm text-red-800 space-y-1">
                       {importResults.errors.map((error, index) => (
-                        <li key={index} className="border-b border-red-100 pb-1">
+                        <li
+                          key={index}
+                          className="border-b border-red-100 pb-1"
+                        >
                           {error}
                         </li>
                       ))}

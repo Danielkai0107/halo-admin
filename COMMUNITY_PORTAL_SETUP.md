@@ -1,8 +1,8 @@
-# 社區管理網頁版設置指南
+# Line OA 管理網頁版設置指南
 
 ## 專案概述
 
-`community-portal` 是一個獨立的社區管理網頁應用，供社區管理員使用 Email/密碼登入，提供長者管理、設備查看、通知記錄和通知點管理功能。
+`community-portal` 是一個獨立的Line OA 管理網頁應用，供Line OA 管理員使用 Email/密碼登入，提供長者管理、設備查看、通知記錄和通知點管理功能。
 
 ## 目錄結構
 
@@ -10,7 +10,7 @@
 admin/
 ├── src/                    # 總公司管理後台
 ├── liff/                   # LINE LIFF 應用（社區成員用）
-└── community-portal/       # 新建：社區管理網頁版
+└── community-portal/       # 新建：Line OA 管理網頁版
     ├── src/
     │   ├── config/         # Firebase 配置
     │   ├── types/          # TypeScript 類型定義
@@ -27,12 +27,14 @@ admin/
 ## 功能模組
 
 ### 1. 認證系統
+
 - Email/密碼登入（Firebase Authentication）
 - 使用 `saas_users` 集合儲存用戶資料
 - 文件 ID 直接使用 Firebase Auth UID
 - 每個用戶直接包含 `tenantId`（所屬社區）
 
 ### 2. 長者管理
+
 - 查看社區內所有長者列表（即時訂閱）
 - 查看長者詳細資訊（含設備綁定狀態）
 - 新增長者
@@ -40,18 +42,21 @@ admin/
 - 綁定/解綁設備
 
 ### 3. 設備清單（唯讀）
+
 - 查看屬於社區的所有設備（根據 `tags` 篩選）
 - 顯示設備狀態（已綁定/未綁定）
 - 顯示電池電量、最後上線時間
 - 僅查看，不可編輯或新增
 
 ### 4. 通知記錄
+
 - 查看已傳送 LINE 通知的活動記錄
 - 按日期範圍篩選
 - 按長者篩選
 - 顯示通知詳情（時間、位置、接收人數）
 
 ### 5. 通知點管理
+
 - 新增通知點：選擇社區的 gateway，設定為固定傳送通知的點位
 - 編輯通知點（名稱、通知訊息）
 - 刪除通知點
@@ -92,6 +97,7 @@ admin/
 ```
 
 **重要事項**:
+
 - 文件 ID 必須使用 Firebase Auth UID
 - `firebaseUid` 欄位值也要是同一個 UID
 - `tenantId` 必須是有效的社區 ID（可從 `tenants` 集合查詢）
@@ -272,6 +278,7 @@ firebase deploy --only functions
 ### Q: 登入後顯示「找不到用戶記錄」
 
 A: 確認以下事項：
+
 1. `saas_users` 文件 ID 是否與 Firebase Auth UID 相同
 2. `firebaseUid` 欄位值是否正確
 3. `isActive` 是否為 `true`
@@ -279,24 +286,28 @@ A: 確認以下事項：
 ### Q: 登入後顯示「找不到社區資料」
 
 A: 確認：
+
 1. `saas_users` 的 `tenantId` 是否有值
 2. `tenants` 集合中是否有對應的社區記錄
 
 ### Q: 看不到任何長者資料
 
 A: 確認：
+
 1. `elders` 集合中是否有 `tenantId` 匹配的記錄
 2. 長者的 `isActive` 是否為 `true`
 
 ### Q: 看不到任何設備
 
 A: 確認：
+
 1. `devices` 集合中的設備是否有 `tags` 欄位
 2. `tags` 陣列是否包含 `tenant_{tenantId}` 格式的 tag
 
 ### Q: 通知點不觸發通知
 
 A: 確認：
+
 1. 通知點的 `isActive` 為 `true`
 2. 通知點的 `notifyOnElderActivity` 為 `true`
 3. 社區有設定 `lineChannelAccessToken`
@@ -312,8 +323,8 @@ A: 確認：
 └─────────────────────┘
 
 ┌─────────────────────┐
-│  Community Portal   │  社區管理網頁
-│  (Email Login)      │  社區管理員
+│  Community Portal   │  Line OA 管理網頁
+│  (Email Login)      │  Line OA 管理員
 │  saas_users         │  管理自己社區
 └─────────────────────┘
 
@@ -324,7 +335,7 @@ A: 確認：
 └─────────────────────┘
 
          ↓ ↓ ↓
-    
+
 ┌─────────────────────┐
 │  Firebase           │
 │  - Authentication   │
@@ -335,7 +346,7 @@ A: 確認：
 
 ## 資料集合說明
 
-- **saas_users**: 社區管理員用戶（Email 登入）
+- **saas_users**: Line OA 管理員用戶（Email 登入）
 - **appUsers**: LINE LIFF 用戶（LINE 登入）
 - **tenants**: 社區資料
 - **elders**: 長者資料
@@ -356,6 +367,7 @@ A: 確認：
 ## 支援
 
 如有問題，請檢查：
+
 - Firebase Console 的 Authentication 和 Firestore
 - 瀏覽器開發者工具的 Console 錯誤訊息
 - Cloud Functions 日誌（Firebase Console > Functions > Logs）

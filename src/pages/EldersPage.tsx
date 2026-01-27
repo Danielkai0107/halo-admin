@@ -359,12 +359,12 @@ export const EldersPage = () => {
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">長者管理</h1>
-          <p className="text-gray-600 mt-1">管理所有長者資料</p>
+          <h2 className="text-2xl font-bold text-gray-900">長者管理</h2>
+          <p className="text-sm text-gray-600 mt-1">管理所有長者資料</p>
         </div>
         <div className="flex items-center space-x-3">
           {selectedElders.length > 0 && (
@@ -387,7 +387,7 @@ export const EldersPage = () => {
       </div>
 
       {/* Search */}
-      <div className="mb-6">
+      <div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input

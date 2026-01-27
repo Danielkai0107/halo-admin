@@ -194,7 +194,7 @@ getByMajorMinor: async (uuid: string, major: number, minor: number) => {
 ### 步驟 3：分配到社區
 
 ```
-1. 進入「社區管理」
+1. 進入「Line OA 管理」
 2. 選擇「大愛社區」
 3. 點擊「分配設備」
 4. 選擇剛才登記的設備

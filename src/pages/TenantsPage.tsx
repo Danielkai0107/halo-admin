@@ -114,28 +114,25 @@ export const TenantsPage = () => {
     }
   };
 
-  const handleCopyLiffLink = async (tenant: Tenant) => {
+  const [showLinkModal, setShowLinkModal] = useState<Tenant | null>(null);
+
+  const handleCopyLink = async (tenant: Tenant, type: "elders" | "map") => {
     try {
-      // 優先使用社區的 lineLiffId，如果沒有則使用全局 LIFF ID
-      const GLOBAL_LIFF_ID = "2008889284-MuPboxSM"; // 請替換為您的實際 LIFF ID
+      // 使用全局 LIFF ID 並帶上 tenantId 參數
+      const GLOBAL_LIFF_ID = "2008889284-MuPboxSM";
       const liffId = tenant.lineLiffId || GLOBAL_LIFF_ID;
 
-      // 生成 LINE LIFF 連結
-      const liffLink = `https://liff.line.me/${liffId}`;
+      // 生成帶 tenantId 的連結
+      const page = type === "elders" ? "elders" : "map";
+      const liffLink = `https://liff.line.me/${liffId}/${page}?tenantId=${tenant.id}`;
 
       // 複製到剪貼簿
       await navigator.clipboard.writeText(liffLink);
 
-      let message = `已複製 LIFF 連結到剪貼簿！\n\n${liffLink}\n\n`;
-      if (tenant.lineLiffId) {
-        message += `說明：\n1. 此連結使用社區專屬的 LIFF ID\n2. 用戶登入後會看到他所屬的社區\n3. 可將此連結設定到 LINE OA 的圖文選單中`;
-      } else {
-        message += `說明：\n1. 此連結使用全局 LIFF ID（建議在社區設定中填入專屬的 LINE LIFF ID）\n2. 用戶登入後會看到他所屬的社區\n3. 可將此連結設定到 LINE OA 的圖文選單中`;
-      }
-
-      alert(message);
+      const pageLabel = type === "elders" ? "長者管理頁面" : "地圖頁面";
+      alert(`已複製${pageLabel}連結到剪貼簿！\n\n${liffLink}`);
     } catch (error) {
-      console.error("Failed to copy LIFF link:", error);
+      console.error("Failed to copy link:", error);
       alert("複製失敗，請重試");
     }
   };
@@ -161,12 +158,12 @@ export const TenantsPage = () => {
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">社區管理</h1>
-          <p className="text-gray-600 mt-1">管理所有社區資料</p>
+          <h2 className="text-2xl font-bold text-gray-900">Line OA 管理</h2>
+          <p className="text-sm text-gray-600 mt-1">管理所有社區資料</p>
         </div>
         <div className="flex items-center space-x-3">
           {selectedTenants.length > 0 && (
@@ -189,7 +186,7 @@ export const TenantsPage = () => {
       </div>
 
       {/* Search */}
-      <div className="mb-6">
+      <div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -286,13 +283,13 @@ export const TenantsPage = () => {
                             tenantName: tenant.name,
                           })
                         }
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg"
                         title="App 成員管理"
                       >
                         <Users className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleCopyLiffLink(tenant)}
+                        onClick={() => setShowLinkModal(tenant)}
                         className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"
                         title="複製 LIFF 連結"
                       >
@@ -520,6 +517,107 @@ export const TenantsPage = () => {
           tenantName={appMembersModal.tenantName}
         />
       )}
+
+      {/* Copy Link Modal */}
+      <Modal
+        isOpen={!!showLinkModal}
+        onClose={() => setShowLinkModal(null)}
+        title="複製 LIFF 連結"
+        size="md"
+      >
+        {showLinkModal && (
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800 mb-2">
+                <strong>社區：</strong>
+                {showLinkModal.name}
+              </p>
+              <p className="text-xs text-blue-700">
+                選擇要複製的連結類型，連結會自動帶上社區 ID 參數
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {/* 長者管理頁面連結 */}
+              <div className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      📋 長者管理頁面
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      用戶可查看長者列表、詳情和管理功能
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center space-x-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={`https://liff.line.me/2008889284-MuPboxSM/elders?tenantId=${showLinkModal.id}`}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded bg-gray-50 font-mono"
+                  />
+                  <button
+                    onClick={() => handleCopyLink(showLinkModal, "elders")}
+                    className="btn-primary flex items-center space-x-1 whitespace-nowrap"
+                  >
+                    <Link className="w-4 h-4" />
+                    <span>複製</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 地圖頁面連結 */}
+              <div className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h4 className="font-semibold text-gray-900">🗺️ 地圖頁面</h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      用戶可查看地圖、綁定設備、設定通知點
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center space-x-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={`https://liff.line.me/2008889284-MuPboxSM/map?tenantId=${showLinkModal.id}`}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded bg-gray-50 font-mono"
+                  />
+                  <button
+                    onClick={() => handleCopyLink(showLinkModal, "map")}
+                    className="btn-primary flex items-center space-x-1 whitespace-nowrap"
+                  >
+                    <Link className="w-4 h-4" />
+                    <span>複製</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <p className="text-xs text-yellow-800">
+                <strong>使用方式：</strong>
+                <br />
+                1. 複製連結到 LINE 圖文選單或訊息中
+                <br />
+                2. 用戶點擊後會自動進入該社區的對應頁面
+                <br />
+                3. 支援同一用戶加入多個社區的情況
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowLinkModal(null)}
+                className="btn-secondary"
+              >
+                關閉
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

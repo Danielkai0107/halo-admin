@@ -1,8 +1,8 @@
-# 地圖 App 用戶刪除功能修正
+# Line 用戶管理刪除功能修正
 
 ## 問題描述
 
-在刪除地圖 App 用戶時，發現兩個問題：
+在刪除Line 用戶管理時，發現兩個問題：
 
 1. **裝置未解綁**: 刪除用戶時，如果用戶有綁定裝置，裝置的綁定狀態未被清除
 2. **Firebase Auth 未刪除**: 刪除 Firestore 中的 `mapAppUsers` 文檔後，Firebase Auth 中的用戶帳號仍然存在
@@ -30,7 +30,7 @@ delete: (id: string) => {
 
 ### 問題 2：Firebase Auth 未刪除
 
-從 `functions/src/mapApp/auth.ts` 可以看到，地圖 App 用戶的註冊流程：
+從 `functions/src/mapApp/auth.ts` 可以看到，Line 用戶管理的註冊流程：
 
 1. 用戶先在客戶端通過 Firebase Auth SDK 創建帳號
 2. 然後調用 `mapUserAuth` API 創建 Firestore 文檔
@@ -39,10 +39,10 @@ delete: (id: string) => {
 ```typescript
 // auth.ts 第 69-83 行
 const newUser = {
-  id: userId,  // userId 來自 decodedToken.uid
+  id: userId, // userId 來自 decodedToken.uid
   // ...
 };
-await db.collection('mapAppUsers').doc(userId).set(newUser);
+await db.collection("mapAppUsers").doc(userId).set(newUser);
 ```
 
 因此，刪除 Firestore 文檔時，也需要刪除對應的 Firebase Auth 帳號。但是：
@@ -134,6 +134,7 @@ delete: (id: string) => {
 ## 部署狀態
 
 ✅ Cloud Function 已成功部署
+
 - **函數名稱：** `deleteMapAppUser`
 - **URL：** `https://us-central1-safe-net-tw.cloudfunctions.net/deleteMapAppUser`
 - **Region：** us-central1
@@ -179,6 +180,7 @@ delete: (id: string) => {
 ### 向後相容性
 
 ✅ 完全向後相容
+
 - 前端的其他功能不受影響
 - 刪除操作現在更完整且安全
 

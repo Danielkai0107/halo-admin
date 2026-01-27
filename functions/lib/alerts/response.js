@@ -112,12 +112,12 @@ exports.declineAlertAssignment = functions.https.onCall(async (data, context) =>
                     .where('status', '==', 'APPROVED')
                     .get();
                 // 獲取拒絕者資料
-                const memberDoc = await db.collection('line_users').doc(memberId).get();
+                const memberDoc = await db.collection('appUsers').doc(memberId).get();
                 const memberName = memberDoc.exists ? (_a = memberDoc.data()) === null || _a === void 0 ? void 0 : _a.name : '成員';
                 // 通知所有管理員
                 const notificationPromises = adminsQuery.docs.map(async (doc) => {
                     const adminData = doc.data();
-                    const adminUserDoc = await db.collection('line_users').doc(adminData.appUserId).get();
+                    const adminUserDoc = await db.collection('appUsers').doc(adminData.appUserId).get();
                     const adminUser = adminUserDoc.data();
                     if (adminUser === null || adminUser === void 0 ? void 0 : adminUser.lineUserId) {
                         const message = `警報分配被拒絕\n\n${memberName} 拒絕處理警報「${alert === null || alert === void 0 ? void 0 : alert.title}」\n${reason ? `原因：${reason}` : ''}\n\n請重新分配處理人員`;

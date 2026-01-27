@@ -1,15 +1,6 @@
 import * as admin from 'firebase-admin';
 import { onRequest } from 'firebase-functions/v2/https';
 
-// 標準錯誤碼定義
-const ErrorCodes = {
-  USER_NOT_FOUND: 'USER_NOT_FOUND',
-  UNAUTHORIZED: 'UNAUTHORIZED',
-  VALIDATION_ERROR: 'VALIDATION_ERROR',
-  INTERNAL_ERROR: 'INTERNAL_ERROR',
-  ACCOUNT_DELETED: 'ACCOUNT_DELETED',
-} as const;
-
 /**
  * Get Map App User Profile
  * GET /getMapUserProfile?userId={userId}
@@ -34,11 +25,7 @@ export const getMapUserProfile = onRequest(async (req, res) => {
   }
 
   if (req.method !== 'GET') {
-    res.status(405).json({ 
-      success: false, 
-      error: '不支援此請求方法',
-      errorCode: ErrorCodes.VALIDATION_ERROR,
-    });
+    res.status(405).json({ success: false, error: 'Method not allowed' });
     return;
   }
 
@@ -46,27 +33,12 @@ export const getMapUserProfile = onRequest(async (req, res) => {
     // Verify Firebase ID Token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ 
-        success: false, 
-        error: '未授權：缺少或無效的認證令牌',
-        errorCode: ErrorCodes.UNAUTHORIZED,
-      });
+      res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    let decodedToken;
-    try {
-      decodedToken = await admin.auth().verifyIdToken(idToken);
-    } catch (tokenError) {
-      res.status(401).json({ 
-        success: false, 
-        error: '未授權：認證令牌無效或已過期',
-        errorCode: ErrorCodes.UNAUTHORIZED,
-      });
-      return;
-    }
-    
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
     const authenticatedUserId = decodedToken.uid;
 
     const userId = req.query.userId as string;
@@ -74,51 +46,27 @@ export const getMapUserProfile = onRequest(async (req, res) => {
     if (!userId) {
       res.status(400).json({ 
         success: false, 
-        error: '參數驗證失敗',
-        errorCode: ErrorCodes.VALIDATION_ERROR,
-        errorDetails: {
-          fields: {
-            userId: '缺少必填參數 userId'
-          }
-        }
+        error: 'Missing required query parameter: userId' 
       });
       return;
     }
 
     // Verify user can only access their own profile
     if (userId !== authenticatedUserId) {
-      res.status(403).json({ 
-        success: false, 
-        error: '禁止存取：無法查看其他用戶的資料',
-        errorCode: ErrorCodes.UNAUTHORIZED,
-      });
+      res.status(403).json({ success: false, error: 'Forbidden' });
       return;
     }
 
     const db = admin.firestore();
 
     // 1. Get user data
-    const userDoc = await db.collection('app_users').doc(userId).get();
+    const userDoc = await db.collection('mapAppUsers').doc(userId).get();
     if (!userDoc.exists) {
-      res.status(404).json({ 
-        success: false, 
-        error: '帳號不存在或已被刪除',
-        errorCode: ErrorCodes.USER_NOT_FOUND,
-      });
+      res.status(404).json({ success: false, error: 'User not found' });
       return;
     }
 
     const userData = userDoc.data();
-
-    // 檢查用戶是否已被刪除標記
-    if (userData?.isDeleted) {
-      res.status(410).json({ 
-        success: false, 
-        error: '帳號已被刪除',
-        errorCode: ErrorCodes.ACCOUNT_DELETED,
-      });
-      return;
-    }
 
     // 2. Prepare user info response
     const userInfo = {
@@ -151,7 +99,7 @@ export const getMapUserProfile = onRequest(async (req, res) => {
 
     // 4. Get notification points
     const notifPointsSnapshot = await db
-      .collection('appUserNotificationPoints')
+      .collection('mapUserNotificationPoints')
       .where('mapAppUserId', '==', userId)
       .where('isActive', '==', true)
       .orderBy('createdAt', 'desc')
@@ -201,8 +149,7 @@ export const getMapUserProfile = onRequest(async (req, res) => {
     console.error('Error in getMapUserProfile:', error);
     res.status(500).json({ 
       success: false, 
-      error: '伺服器內部錯誤',
-      errorCode: ErrorCodes.INTERNAL_ERROR,
+      error: error.message || 'Internal server error' 
     });
   }
 });

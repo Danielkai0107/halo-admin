@@ -7,18 +7,40 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // 使用 _variables.scss 中的顏色
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          DEFAULT: '#4ecdc4',
+          50: '#e0f7f6',
+          100: '#b3ede9',
+          200: '#80e2dc',
+          300: '#4dd7cf',
+          400: '#26cfc5',
+          500: '#4ecdc4',
+          600: '#3db8b0',
+          700: '#2c9a93',
+          800: '#1b7c76',
+          900: '#0a5e59',
         },
+        secondary: {
+          DEFAULT: '#ffc107',
+          500: '#ffc107',
+          600: '#ffb300',
+        },
+        // 守望點類型顏色
+        'school-zone': '#ff6a95',
+        'safe-zone': '#4ecdc4',
+        'observe-zone': '#00ccea',
+        'inactive-zone': '#c4c4c4',
+      },
+      borderRadius: {
+        'app': '12px',
+        'app-sm': '8px',
+        'app-lg': '16px',
+      },
+      boxShadow: {
+        'app-sm': '0 2px 4px rgba(0, 0, 0, 0.1)',
+        'app-md': '0 4px 8px rgba(0, 0, 0, 0.15)',
+        'app-lg': '0 8px 16px rgba(0, 0, 0, 0.2)',
       },
     },
   },

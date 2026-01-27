@@ -2,7 +2,7 @@
 
 ## 📋 概述
 
-當管理員在後台刪除地圖 App 用戶時，系統會在刪除前自動發送 FCM 推送通知給該用戶，通知類型為 `ACCOUNT_DELETED`。
+當管理員在後台刪除Line 用戶管理時，系統會在刪除前自動發送 FCM 推送通知給該用戶，通知類型為 `ACCOUNT_DELETED`。
 
 ## ✅ 部署狀態
 
@@ -78,14 +78,15 @@
 ### 1. 監聽 FCM 通知
 
 **Android (Kotlin):**
+
 ```kotlin
 override fun onMessageReceived(remoteMessage: RemoteMessage) {
     val notificationType = remoteMessage.data["type"]
-    
+
     if (notificationType == "ACCOUNT_DELETED") {
         val userId = remoteMessage.data["userId"]
         val timestamp = remoteMessage.data["timestamp"]
-        
+
         // 立即登出用戶
         handleAccountDeleted(userId, timestamp)
     }
@@ -94,31 +95,32 @@ override fun onMessageReceived(remoteMessage: RemoteMessage) {
 private fun handleAccountDeleted(userId: String?, timestamp: String?) {
     // 1. 清除本地數據
     clearLocalData()
-    
+
     // 2. 登出 Firebase Auth
     FirebaseAuth.getInstance().signOut()
-    
+
     // 3. 顯示通知或對話框
     showAccountDeletedDialog()
-    
+
     // 4. 導航到登入頁面
     navigateToLoginScreen()
 }
 ```
 
 **iOS (Swift):**
+
 ```swift
 func userNotificationCenter(_ center: UNUserNotificationCenter,
                           willPresent notification: UNNotification,
                           withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-    
+
     let userInfo = notification.request.content.userInfo
-    
+
     if let notificationType = userInfo["type"] as? String,
        notificationType == "ACCOUNT_DELETED" {
         let userId = userInfo["userId"] as? String
         let timestamp = userInfo["timestamp"] as? String
-        
+
         // 立即登出用戶
         handleAccountDeleted(userId: userId, timestamp: timestamp)
     }
@@ -127,27 +129,28 @@ func userNotificationCenter(_ center: UNUserNotificationCenter,
 private func handleAccountDeleted(userId: String?, timestamp: String?) {
     // 1. 清除本地數據
     clearLocalData()
-    
+
     // 2. 登出 Firebase Auth
     try? Auth.auth().signOut()
-    
+
     // 3. 顯示通知或對話框
     showAccountDeletedAlert()
-    
+
     // 4. 導航到登入頁面
     navigateToLoginScreen()
 }
 ```
 
 **React Native:**
+
 ```javascript
-messaging().onMessage(async remoteMessage => {
+messaging().onMessage(async (remoteMessage) => {
   const notificationType = remoteMessage.data?.type;
-  
-  if (notificationType === 'ACCOUNT_DELETED') {
+
+  if (notificationType === "ACCOUNT_DELETED") {
     const userId = remoteMessage.data?.userId;
     const timestamp = remoteMessage.data?.timestamp;
-    
+
     // 立即登出用戶
     handleAccountDeleted(userId, timestamp);
   }
@@ -156,15 +159,15 @@ messaging().onMessage(async remoteMessage => {
 const handleAccountDeleted = async (userId, timestamp) => {
   // 1. 清除本地數據
   await clearLocalData();
-  
+
   // 2. 登出 Firebase Auth
   await auth().signOut();
-  
+
   // 3. 顯示通知或對話框
   Alert.alert(
-    '帳號已被刪除',
-    '您的帳號已被管理員刪除，請重新登入或聯繫客服。',
-    [{ text: '確定', onPress: () => navigation.navigate('Login') }]
+    "帳號已被刪除",
+    "您的帳號已被管理員刪除，請重新登入或聯繫客服。",
+    [{ text: "確定", onPress: () => navigation.navigate("Login") }],
   );
 };
 ```
@@ -185,7 +188,7 @@ private fun createAccountManagementChannel() {
             enableVibration(true)
             setShowBadge(true)
         }
-        
+
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(channel)
     }
@@ -211,6 +214,7 @@ private fun createAccountManagementChannel() {
 ```
 
 **欄位說明：**
+
 - `fcmNotificationSent`: 是否成功發送 FCM 通知
 - `firestoreDeleted`: Firestore 文檔是否刪除
 - `authDeleted`: Firebase Auth 帳號是否刪除
@@ -220,20 +224,24 @@ private fun createAccountManagementChannel() {
 ## ⚠️ 注意事項
 
 ### 1. FCM Token 必須存在
+
 - 只有當用戶的 `fcmToken` 欄位有值時，才會發送通知
 - 如果用戶從未設定 FCM token，通知會被跳過但刪除流程仍會繼續
 
 ### 2. 通知發送失敗處理
+
 - 如果 FCM 通知發送失敗（例如 token 過期），不會影響刪除流程
 - 錯誤會被記錄在 Cloud Functions 日誌中
 - `fcmNotificationSent` 會返回 `false`
 
 ### 3. 時序問題
+
 - 通知在刪除流程**最開始**就會發送
 - App 端可能會在收到通知後嘗試訪問 API，但此時帳號可能已被刪除
 - 建議 App 端在收到 `ACCOUNT_DELETED` 通知後直接登出，不要嘗試其他 API 呼叫
 
 ### 4. 測試建議
+
 1. 在測試環境先測試 FCM 通知是否正常送達
 2. 測試 App 端收到通知後的登出流程
 3. 測試用戶沒有 FCM token 時的刪除流程
@@ -254,6 +262,7 @@ private fun createAccountManagementChannel() {
 ### 統計指標
 
 建議追蹤以下指標：
+
 - FCM 通知發送成功率
 - App 端收到通知的比例
 - 用戶從收到通知到登出的平均時間

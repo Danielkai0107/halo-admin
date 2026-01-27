@@ -2,7 +2,7 @@
 
 ## 功能說明
 
-社區管理員可以在 Community Portal 中**直接操作通知點**，完全不需要訪問 Admin 後台。
+Line OA 管理員可以在 Community Portal 中**直接操作通知點**，完全不需要訪問 Admin 後台。
 
 ---
 
@@ -12,11 +12,12 @@
 
 訪問：`https://safe-net-tw.web.app/community`
 
-使用您的社區管理員帳號登入（在 Admin 建立的 SaaS 用戶）
+使用您的Line OA 管理員帳號登入（在 Admin 建立的 SaaS 用戶）
 
 ### 步驟 2: 前往通知點頁面
 
 點擊側邊欄的「通知點」或訪問：
+
 ```
 https://safe-net-tw.web.app/community/notification-points
 ```
@@ -46,6 +47,7 @@ https://safe-net-tw.web.app/community/notification-points
 **操作**：點擊接收器前面的勾選框
 
 **效果**：
+
 - ✓ 勾選框打勾
 - 顯示「已設為通知點」綠色標籤
 - 下方出現「自訂通知訊息」輸入框
@@ -65,14 +67,17 @@ https://safe-net-tw.web.app/community/notification-points
 ### 步驟 5: 設定自訂通知訊息（選填）
 
 **操作**：
+
 1. 在輸入框輸入訊息，例如：「長者已安全回到社區」
 2. 點擊「更新」按鈕
 
 **效果**：
+
 - 顯示「自訂訊息已更新」
 - 訊息保存到資料庫
 
 **如果不設定自訂訊息**：
+
 - 系統使用預設格式：「[長者名稱] 經過 [接收器名稱]」
 
 ### 步驟 6: 停用通知點
@@ -80,6 +85,7 @@ https://safe-net-tw.web.app/community/notification-points
 **操作**：再次點擊勾選框取消勾選
 
 **效果**：
+
 - 勾選框取消
 - 「已設為通知點」標籤消失
 - 該接收器不再觸發通知
@@ -108,6 +114,7 @@ https://safe-net-tw.web.app/community/notification-points
 ```
 
 **重要**：
+
 - 這個記錄是在**社區資料庫下**（不是 Admin 資料庫）
 - 只有您社區的管理員可以管理
 - 其他社區無法看到或修改
@@ -119,11 +126,13 @@ https://safe-net-tw.web.app/community/notification-points
 ### 誰可以操作？
 
 **ADMIN 角色**：
+
 - ✅ 勾選/取消勾選通知點
 - ✅ 設定自訂訊息
 - ✅ 更新訊息
 
 **MEMBER 角色**：
+
 - ✅ 查看哪些 gateway 是通知點
 - ✅ 查看自訂訊息
 - ❌ 無法勾選或修改
@@ -154,6 +163,7 @@ https://safe-net-tw.web.app/community/notification-points
 **症狀**：Admin 有 Gateway，但 Community Portal 看不到
 
 **解決方法**：
+
 1. 在 Admin「GateWay 管理」編輯 Gateway
 2. 設定「所屬社區」為您的社區
 3. 儲存後重新整理
@@ -163,6 +173,7 @@ https://safe-net-tw.web.app/community/notification-points
 **症狀**：Console 顯示權限錯誤
 
 **解決方法**：
+
 1. 確認您的帳號 `isActive` 為 true
 2. 確認您的帳號有 `tenantId`
 3. 重新登入
@@ -206,15 +217,18 @@ https://safe-net-tw.web.app/community/notification-points
 ### 模擬長者經過通知點
 
 **方法 1：請系統管理員協助**
+
 - 在 Admin 的「Line 通知測試」頁面
 - 輸入長者的設備資訊和通知點的 gateway
 - 發送測試
 
 **方法 2：使用實際設備**
+
 - 讓長者攜帶的 Beacon 設備靠近「社區大門」的接收器
 - 等待自動上傳
 
 **預期結果**：
+
 - LINE 收到通知
 - 通知內容是您設定的自訂訊息
 - Community Portal「通知記錄」出現記錄
@@ -223,16 +237,17 @@ https://safe-net-tw.web.app/community/notification-points
 
 ## 與 Admin 的關係
 
-| 操作 | 在哪裡做 | 誰來做 |
-|------|---------|--------|
-| 新增 Gateway（接收器） | Admin 後台 | 系統管理員 |
-| 設定通知點（勾選） | Community Portal | 社區管理員 |
-| 設定自訂訊息 | Community Portal | 社區管理員 |
-| 查看通知記錄 | Community Portal | 社區管理員 |
+| 操作                   | 在哪裡做         | 誰來做         |
+| ---------------------- | ---------------- | -------------- |
+| 新增 Gateway（接收器） | Admin 後台       | 系統管理員     |
+| 設定通知點（勾選）     | Community Portal | Line OA 管理員 |
+| 設定自訂訊息           | Community Portal | Line OA 管理員 |
+| 查看通知記錄           | Community Portal | Line OA 管理員 |
 
 **簡單來說**：
+
 - **系統管理員**：在 Admin 建立實體接收器（一次性）
-- **社區管理員**：在 Community Portal 決定哪些接收器要發通知（隨時調整）
+- **Line OA 管理員**：在 Community Portal 決定哪些接收器要發通知（隨時調整）
 
 ---
 
@@ -247,13 +262,14 @@ https://safe-net-tw.web.app/community/notification-points
 
 2. **通知點設定**（Community Portal）
    - 通知點是邏輯概念（哪些位置要通知）
-   - 社區管理員根據實際需求決定
+   - Line OA 管理員根據實際需求決定
    - 可以隨時調整，無需技術知識
    - 設定自訂訊息，符合社區需求
 
 ### 資料隔離
 
 每個社區的通知點設定是**獨立的**：
+
 - 社區 A 的管理員只能看到和設定社區 A 的通知點
 - 社區 B 的管理員只能看到和設定社區 B 的通知點
 - 資料完全隔離，互不影響
@@ -265,20 +281,22 @@ https://safe-net-tw.web.app/community/notification-points
 ### ✅ 功能已正確實作
 
 1. **Gateway 查詢**：
+
    ```typescript
    // 只查詢該社區的 gateways
-   where('tenantId', '==', tenantId)
-   where('isActive', '==', true)
+   where("tenantId", "==", tenantId);
+   where("isActive", "==", true);
    ```
 
 2. **通知點建立**：
+
    ```typescript
    // 勾選時建立記錄
    tenantNotificationPoints.add({
      tenantId: 當前社區ID,
      gatewayId: 勾選的gateway,
      // ...其他資訊
-   })
+   });
    ```
 
 3. **權限控制**：
@@ -324,11 +342,13 @@ https://safe-net-tw.web.app/community/notification-points
 **解決方法**：
 
 **選項 A：請系統管理員新增**
+
 1. 聯絡系統管理員
 2. 請他們在 Admin「GateWay 管理」新增接收器
 3. **重要**：設定所屬社區為您的社區
 
 **選項 B：檢查現有 Gateway**
+
 1. 在 Firestore Console 查看 `gateways` 集合
 2. 找到應該屬於您社區的 gateway
 3. 確認 `tenantId` 欄位是否正確
@@ -344,6 +364,7 @@ https://safe-net-tw.web.app/community/notification-points
 ### 問題：勾選後沒有保存
 
 **檢查**：
+
 1. 開啟瀏覽器開發者工具（F12）
 2. 查看 Console 是否有錯誤
 3. 常見錯誤：
@@ -400,17 +421,20 @@ Cloud Function 檢查是否為通知點
 ## 快速參考
 
 **Community Portal URL**：
+
 ```
 https://safe-net-tw.web.app/community
 ```
 
 **通知點頁面**：
+
 ```
 側邊欄 → 通知點
 或直接訪問 /community/notification-points
 ```
 
 **操作**：
+
 1. 勾選 = 設為通知點
 2. 取消勾選 = 停用通知點
 3. 輸入訊息 + 更新 = 設定自訂訊息
@@ -457,4 +481,4 @@ https://safe-net-tw.web.app/community
 
 ---
 
-這樣設計的好處是：社區管理員可以完全自主管理通知點，不需要依賴系統管理員或 IT 人員！
+這樣設計的好處是：Line OA 管理員可以完全自主管理通知點，不需要依賴系統管理員或 IT 人員！

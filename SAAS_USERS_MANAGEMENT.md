@@ -2,7 +2,7 @@
 
 ## 功能說明
 
-在 Admin 管理後台新增了「SaaS 用戶管理」頁面，用於管理社區管理網頁版（Community Portal）的用戶帳號。
+在 Admin 管理後台新增了「SaaS 用戶管理」頁面，用於管理Line OA 管理網頁版（Community Portal）的用戶帳號。
 
 ## 訪問方式
 
@@ -15,6 +15,7 @@
 ### 1. 查看用戶列表
 
 顯示所有 SaaS 用戶的資訊：
+
 - 姓名、Email、電話
 - 所屬社區
 - 角色（管理員/成員）
@@ -27,6 +28,7 @@
 點擊「新增用戶」按鈕，填寫以下資訊：
 
 **必填欄位**：
+
 - Email（作為登入帳號）
 - 密碼（至少 6 個字元）
 - 姓名
@@ -34,21 +36,25 @@
 - 角色
 
 **選填欄位**：
+
 - 電話
 
 **角色說明**：
+
 - **管理員（ADMIN）**：可新增/編輯/刪除長者、設定通知點等
 - **成員（MEMBER）**：只能查看資料，無法編輯
 
 ### 3. 編輯用戶
 
 點擊用戶列表中的「編輯」圖示，可以修改：
+
 - 姓名
 - 電話
 - 所屬社區
 - 角色
 
 **注意**：
+
 - Email 無法修改
 - 無法透過介面修改密碼（需使用 Firebase Console）
 
@@ -87,6 +93,7 @@
 **Document ID**: Firebase Auth UID（重要！）
 
 **欄位**：
+
 ```typescript
 {
   firebaseUid: string,      // 與 Firebase Auth UID 相同
@@ -105,26 +112,28 @@
 ### 檔案列表
 
 **新增的檔案**：
+
 1. `src/services/saasUserService.ts` - SaaS 用戶服務層
 2. `src/pages/SaasUsersPage.tsx` - SaaS 用戶管理頁面
 
 **修改的檔案**：
+
 1. `src/types/index.ts` - 新增 SaasUser 介面
 2. `src/App.tsx` - 新增路由
 3. `src/layouts/DashboardLayout.tsx` - 新增側邊欄選項
 
 ## 使用流程
 
-### 建立第一個社區管理員帳號
+### 建立第一個Line OA 管理員帳號
 
-1. 確認社區已存在（在「社區管理」頁面檢查）
+1. 確認社區已存在（在「Line OA 管理」頁面檢查）
 2. 前往「SaaS 用戶管理」頁面
 3. 點擊「新增用戶」
 4. 填寫資訊：
    ```
    Email: admin@community.com
    密碼: admin123456
-   姓名: 社區管理員
+   姓名: Line OA 管理員
    所屬社區: （選擇社區）
    角色: 管理員
    ```
@@ -142,31 +151,34 @@
 ### Admin 管理後台權限
 
 只有以下角色可以管理 SaaS 用戶：
+
 - SUPER_ADMIN（超級管理員）
 
 ### Community Portal 權限
 
 SaaS 用戶登入 Community Portal 後：
 
-| 功能 | ADMIN 角色 | MEMBER 角色 |
-|------|-----------|------------|
-| 查看長者列表 | ✓ | ✓ |
-| 新增/編輯長者 | ✓ | ✗ |
-| 查看設備列表 | ✓ | ✓ |
-| 查看通知記錄 | ✓ | ✓ |
-| 管理通知點 | ✓ | ✗ |
+| 功能          | ADMIN 角色 | MEMBER 角色 |
+| ------------- | ---------- | ----------- |
+| 查看長者列表  | ✓          | ✓           |
+| 新增/編輯長者 | ✓          | ✗           |
+| 查看設備列表  | ✓          | ✓           |
+| 查看通知記錄  | ✓          | ✓           |
+| 管理通知點    | ✓          | ✗           |
 
 ## 常見問題
 
 ### Q: 新增用戶時顯示「此 Email 已被使用」
 
 A: 該 Email 已在 Firebase Auth 中註冊。可以：
+
 1. 使用其他 Email
 2. 或在 Firebase Console 刪除舊帳號後重新建立
 
 ### Q: 用戶建立成功但無法登入
 
 A: 檢查：
+
 1. Firestore 中 `saas_users` 文件 ID 是否等於 Firebase Auth UID
 2. `firebaseUid` 欄位值是否正確
 3. `isActive` 是否為 `true`
@@ -175,12 +187,14 @@ A: 檢查：
 ### Q: 如何重設用戶密碼？
 
 A: 目前有兩種方法：
+
 1. **Firebase Console**：Authentication > Users > 找到用戶 > 重設密碼
 2. **使用腳本**：執行 `functions/create-saas-user.cjs`，會自動更新密碼
 
 ### Q: 刪除用戶後如何復原？
 
-A: 
+A:
+
 1. 前往 SaaS 用戶管理頁面
 2. 找到該用戶（狀態顯示「停用」）
 3. 點擊「啟用」圖示
@@ -188,23 +202,25 @@ A:
 ### Q: 可以為一個人建立多個社區的帳號嗎？
 
 A: 目前一個 Email 只能對應一個社區。如需管理多個社區，可以：
+
 1. 使用不同的 Email（如 admin@community-a.com, admin@community-b.com）
 2. 或未來擴展為支援多社區（將 tenantId 改為 tenantIds 陣列）
 
 ## 統計資訊
 
 頁面下方顯示三個統計卡片：
+
 - 總用戶數
 - 啟用用戶數
 - 管理員數量
 
 ## 與其他用戶系統的區別
 
-| 集合 | 用途 | 登入方式 | 使用應用 |
-|------|------|---------|---------|
-| users | 總公司人員 | Email/密碼 | Admin 管理後台 |
-| saas_users | 社區管理員 | Email/密碼 | Community Portal |
-| appUsers | 社區成員 | LINE | LIFF App |
+| 集合       | 用途           | 登入方式   | 使用應用         |
+| ---------- | -------------- | ---------- | ---------------- |
+| users      | 總公司人員     | Email/密碼 | Admin 管理後台   |
+| saas_users | Line OA 管理員 | Email/密碼 | Community Portal |
+| appUsers   | 社區成員       | LINE       | LIFF App         |
 
 ## 安全性考量
 

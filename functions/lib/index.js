@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createAdminUser = exports.clearAllData = exports.checkMapUserStatus = exports.getMapUserProfile = exports.getMapUserActivities = exports.updateMapUserNotificationPoint = exports.getMapUserNotificationPoints = exports.removeMapUserNotificationPoint = exports.addMapUserNotificationPoint = exports.getPublicGateways = exports.deleteMapAppUser = exports.updateMapUserDevice = exports.unbindDeviceFromElder = exports.unbindDeviceFromMapUser = exports.bindDeviceToMapUser = exports.updateMapUserAvatar = exports.updateMapUserFcmToken = exports.mapUserAuth = exports.getServiceUuids = exports.getDeviceWhitelist = exports.minewGateway = exports.receiveBeaconData = exports.getTenantFollowers = exports.verifyUserTenant = exports.lineWebhook = exports.checkInactiveElders = exports.completeAlert = exports.declineAlertAssignment = exports.acceptAlertAssignment = exports.assignAlert = void 0;
+exports.getLineUserActivities = exports.getLineUserNotificationPoints = exports.removeLineUserNotificationPoint = exports.addLineUserNotificationPoint = exports.unbindDeviceFromLineUser = exports.bindDeviceToLineUser = exports.getMapUserProfile = exports.getMapUserActivities = exports.updateMapUserNotificationPoint = exports.getMapUserNotificationPoints = exports.removeMapUserNotificationPoint = exports.addMapUserNotificationPoint = exports.getPublicGateways = exports.unbindDeviceFromMapUser = exports.bindDeviceToMapUser = exports.updateMapUserFcmToken = exports.mapUserAuth = exports.getServiceUuids = exports.getDeviceWhitelist = exports.minewGateway = exports.receiveBeaconData = exports.getTenantFollowers = exports.verifyUserTenant = exports.lineWebhook = exports.checkInactiveElders = exports.completeAlert = exports.declineAlertAssignment = exports.acceptAlertAssignment = exports.assignAlert = void 0;
 const admin = __importStar(require("firebase-admin"));
 const assignment_1 = require("./alerts/assignment");
 Object.defineProperty(exports, "assignAlert", { enumerable: true, get: function () { return assignment_1.assignAlert; } });
@@ -63,17 +63,9 @@ const auth_1 = require("./mapApp/auth");
 Object.defineProperty(exports, "mapUserAuth", { enumerable: true, get: function () { return auth_1.mapUserAuth; } });
 const fcmToken_1 = require("./mapApp/fcmToken");
 Object.defineProperty(exports, "updateMapUserFcmToken", { enumerable: true, get: function () { return fcmToken_1.updateMapUserFcmToken; } });
-const updateAvatar_1 = require("./mapApp/updateAvatar");
-Object.defineProperty(exports, "updateMapUserAvatar", { enumerable: true, get: function () { return updateAvatar_1.updateMapUserAvatar; } });
 const deviceBinding_1 = require("./mapApp/deviceBinding");
 Object.defineProperty(exports, "bindDeviceToMapUser", { enumerable: true, get: function () { return deviceBinding_1.bindDeviceToMapUser; } });
 Object.defineProperty(exports, "unbindDeviceFromMapUser", { enumerable: true, get: function () { return deviceBinding_1.unbindDeviceFromMapUser; } });
-const elderBinding_1 = require("./mapApp/elderBinding");
-Object.defineProperty(exports, "unbindDeviceFromElder", { enumerable: true, get: function () { return elderBinding_1.unbindDeviceFromElder; } });
-const deviceUpdate_1 = require("./mapApp/deviceUpdate");
-Object.defineProperty(exports, "updateMapUserDevice", { enumerable: true, get: function () { return deviceUpdate_1.updateMapUserDevice; } });
-const deleteUser_1 = require("./mapApp/deleteUser");
-Object.defineProperty(exports, "deleteMapAppUser", { enumerable: true, get: function () { return deleteUser_1.deleteMapAppUser; } });
 const gateways_1 = require("./mapApp/gateways");
 Object.defineProperty(exports, "getPublicGateways", { enumerable: true, get: function () { return gateways_1.getPublicGateways; } });
 const notificationPoints_1 = require("./mapApp/notificationPoints");
@@ -85,13 +77,16 @@ const activities_1 = require("./mapApp/activities");
 Object.defineProperty(exports, "getMapUserActivities", { enumerable: true, get: function () { return activities_1.getMapUserActivities; } });
 const userProfile_1 = require("./mapApp/userProfile");
 Object.defineProperty(exports, "getMapUserProfile", { enumerable: true, get: function () { return userProfile_1.getMapUserProfile; } });
-const userStatus_1 = require("./mapApp/userStatus");
-Object.defineProperty(exports, "checkMapUserStatus", { enumerable: true, get: function () { return userStatus_1.checkMapUserStatus; } });
-// Admin APIs
-const clearAllData_1 = require("./admin/clearAllData");
-Object.defineProperty(exports, "clearAllData", { enumerable: true, get: function () { return clearAllData_1.clearAllData; } });
-const createAdminUser_1 = require("./admin/createAdminUser");
-Object.defineProperty(exports, "createAdminUser", { enumerable: true, get: function () { return createAdminUser_1.createAdminUser; } });
+// LINE User APIs (for LIFF Map)
+const lineUserDeviceBinding_1 = require("./mapApp/lineUserDeviceBinding");
+Object.defineProperty(exports, "bindDeviceToLineUser", { enumerable: true, get: function () { return lineUserDeviceBinding_1.bindDeviceToLineUser; } });
+Object.defineProperty(exports, "unbindDeviceFromLineUser", { enumerable: true, get: function () { return lineUserDeviceBinding_1.unbindDeviceFromLineUser; } });
+const lineUserNotificationPoints_1 = require("./mapApp/lineUserNotificationPoints");
+Object.defineProperty(exports, "addLineUserNotificationPoint", { enumerable: true, get: function () { return lineUserNotificationPoints_1.addLineUserNotificationPoint; } });
+Object.defineProperty(exports, "removeLineUserNotificationPoint", { enumerable: true, get: function () { return lineUserNotificationPoints_1.removeLineUserNotificationPoint; } });
+Object.defineProperty(exports, "getLineUserNotificationPoints", { enumerable: true, get: function () { return lineUserNotificationPoints_1.getLineUserNotificationPoints; } });
+const lineUserActivities_1 = require("./mapApp/lineUserActivities");
+Object.defineProperty(exports, "getLineUserActivities", { enumerable: true, get: function () { return lineUserActivities_1.getLineUserActivities; } });
 // Initialize Firebase Admin
 admin.initializeApp();
 //# sourceMappingURL=index.js.map

@@ -1,4 +1,4 @@
-# 社區管理網頁版 - 使用說明
+# Line OA 管理網頁版 - 使用說明
 
 ## 快速開始（3 步驟）
 
@@ -37,13 +37,13 @@ npm run dev
 
 ### 1️⃣ Admin 管理後台（總公司）
 
-**用途**：系統管理、建立社區管理員
+**用途**：系統管理、建立Line OA 管理員
 **訪問**：`http://localhost:3000`
 **用戶**：users 集合（SUPER_ADMIN）
 
-### 2️⃣ Community Portal（社區管理員）
+### 2️⃣ Community Portal（Line OA 管理員）
 
-**用途**：社區管理、長者管理、通知點設定
+**用途**：Line OA 管理、長者管理、通知點設定
 **訪問**：`http://localhost:3002/community`
 **用戶**：saas_users 集合（ADMIN/MEMBER）
 
@@ -57,12 +57,12 @@ npm run dev
 
 ## Community Portal 功能
 
-| 頁面 | 路徑 | 功能 | ADMIN | MEMBER |
-|------|------|------|-------|--------|
-| 長者管理 | /elders | 查看、新增、編輯 | ✓ | 查看 |
-| 設備清單 | /devices | 查看社區設備 | ✓ | ✓ |
-| 通知記錄 | /notification-logs | 查看 LINE 通知記錄 | ✓ | ✓ |
-| 通知點 | /notification-points | 設定通知點位 | ✓ | 查看 |
+| 頁面     | 路徑                 | 功能               | ADMIN | MEMBER |
+| -------- | -------------------- | ------------------ | ----- | ------ |
+| 長者管理 | /elders              | 查看、新增、編輯   | ✓     | 查看   |
+| 設備清單 | /devices             | 查看社區設備       | ✓     | ✓      |
+| 通知記錄 | /notification-logs   | 查看 LINE 通知記錄 | ✓     | ✓      |
+| 通知點   | /notification-points | 設定通知點位       | ✓     | 查看   |
 
 ---
 
@@ -129,19 +129,23 @@ npm run dev
 ### 建立用戶失敗
 
 **錯誤**：「此 Email 已被使用」
+
 - 使用其他 Email，或在 Firebase Console 刪除舊帳號
 
 **錯誤**：「找不到社區」
-- 先在「社區管理」頁面建立社區
+
+- 先在「Line OA 管理」頁面建立社區
 
 ### 登入 Community Portal 失敗
 
 **症狀**：登入後重定向到登入頁面
+
 - 開啟瀏覽器開發者工具（F12）
 - 查看 Console 錯誤訊息
 - 確認 saas_users 文件 ID = Firebase UID
 
 **症狀**：顯示「找不到社區資料」
+
 - 確認 tenantId 有值且對應的社區存在
 
 ### 看不到設備
@@ -199,11 +203,13 @@ firebase deploy                            # 部署所有
 ## 聯絡與支援
 
 技術文檔：
+
 - `SAAS_USERS_QUICK_GUIDE.md` - 快速指南
 - `COMMUNITY_PORTAL_COMPLETE.md` - 完整總結
 - `DEPLOYMENT_GUIDE.md` - 部署指南
 
 Firebase Console：
+
 - 專案：safe-net-tw
 - 網址：https://console.firebase.google.com/project/safe-net-tw
 

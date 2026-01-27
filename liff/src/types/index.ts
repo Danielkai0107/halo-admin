@@ -71,8 +71,13 @@ export interface Device {
   type: DeviceType;
   // 綁定狀態（新架構）
   bindingType: DeviceBindingType;
-  boundTo: string | null;           // elderId 或 mapAppUserId
+  boundTo: string | null;           // elderId 或 mapAppUserId 或 lineUserDocId
   boundAt: string | null;
+  // MAP_USER / LINE_USER 專屬資料
+  mapUserNickname?: string | null;
+  mapUserAge?: number | null;
+  mapUserGender?: 'MALE' | 'FEMALE' | 'OTHER' | null;
+  inheritedNotificationPointIds?: string[];  // Gateway IDs 陣列
   // 標籤（取代 tenantId）
   tags: string[];                   // 例如：["tenant_id_1", "tenant_id_2"]
   // 裝置狀態
@@ -84,11 +89,12 @@ export interface Device {
 }
 
 // 裝置綁定類型
-export type DeviceBindingType = "ELDER" | "MAP_USER" | "UNBOUND" | "ANONYMOUS";
+export type DeviceBindingType = "ELDER" | "MAP_USER" | "LINE_USER" | "UNBOUND" | "ANONYMOUS";
 
 export const DeviceBindingType = {
   ELDER: "ELDER",
   MAP_USER: "MAP_USER",
+  LINE_USER: "LINE_USER",
   UNBOUND: "UNBOUND",
   ANONYMOUS: "ANONYMOUS",
 } as const;
@@ -227,4 +233,32 @@ export interface Activity {
   latitude?: number;
   longitude?: number;
   gateway?: Gateway;
+  bindingType?: string;
+}
+
+// Map related types
+export interface MapMarker {
+  id: string;
+  type: 'gateway' | 'activity';
+  position: {
+    top: string;
+    left: string;
+  };
+  data: Gateway | (Activity & { elder?: Elder });
+}
+
+export interface TimelineActivity {
+  id: string;
+  gatewayId: string;
+  gatewayName: string;
+  message: string;
+  time: string;
+  timestamp: any;
+  isLatest?: boolean;
+  hasNotification?: boolean;
+}
+
+export interface DateGroup {
+  date: string;
+  activities: TimelineActivity[];
 }

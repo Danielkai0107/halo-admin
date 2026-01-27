@@ -378,7 +378,7 @@ https://console.firebase.google.com/project/safe-net-tw/firestore
       ├─ Major: 1
       └─ Minor: 1001
 
-3. 社區管理
+3. Line OA 管理
    └─ 分配設備到社區
    └─ 確認 LINE Token 已設定
 

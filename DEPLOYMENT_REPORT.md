@@ -11,14 +11,17 @@
 ### 1. 後端 API (Cloud Functions)
 
 **部署的函數:**
+
 - ✅ `bindDeviceToMapUser` - 綁定設備到地圖用戶
 - ✅ `unbindDeviceFromMapUser` - 解綁設備
 
 **Functions URLs:**
+
 - `bindDeviceToMapUser`: https://binddevicetomapuser-kmzfyt3t5a-uc.a.run.app
 - `unbindDeviceFromMapUser`: https://unbinddevicefrommapuser-kmzfyt3t5a-uc.a.run.app
 
 **更新內容:**
+
 - ✅ 支援使用 `deviceName`（產品序號）綁定
 - ✅ 新增 `elderId` 衝突檢查（避免與老人系統衝突）
 - ✅ 改進 `poolType` 檢查邏輯
@@ -31,11 +34,12 @@
 **部署地址:** https://safe-net-tw.web.app
 
 **更新內容:**
+
 - ✅ 設備管理頁面新增 `poolType` 欄位
   - 新增/編輯表單中的下拉選單
   - 設備列表中的顏色標籤顯示
   - 預設值：`PUBLIC`
-- ✅ 新增地圖 APP 用戶管理頁面
+- ✅ 新增Line 用戶管理管理頁面
 - ✅ 前端服務改為調用 Cloud Function API
 
 ---
@@ -43,16 +47,18 @@
 ## 📊 部署統計
 
 ### 後端部署
+
 - **狀態:** ✅ 成功
 - **耗時:** ~85 秒
 - **Region:** us-central1
 - **Runtime:** Node.js 20 (2nd Gen)
 
 ### 前端部署
+
 - **狀態:** ✅ 成功
 - **耗時:** ~7 秒
 - **檔案數量:** 4 個
-- **總大小:** 
+- **總大小:**
   - CSS: 36.56 KB (gzip: 6.70 KB)
   - JS: 974.56 KB (gzip: 275.85 KB)
 
@@ -63,14 +69,16 @@
 所有更新的功能現已在生產環境中可用：
 
 ### ✅ 後端 API
+
 - [x] 支援 deviceName 綁定
 - [x] elderId 衝突檢查
 - [x] poolType 驗證
 - [x] 管理員權限
 
 ### ✅ 前端介面
+
 - [x] 設備管理頁面 poolType 欄位
-- [x] 地圖 APP 用戶管理頁面
+- [x] Line 用戶管理管理頁面
 - [x] 設備綁定/解綁功能
 
 ---
@@ -100,7 +108,7 @@ curl -X POST https://binddevicetomapuser-kmzfyt3t5a-uc.a.run.app \
 2. 登入後台管理系統
 3. 進入「設備管理」頁面
 4. 新增設備時確認有 `poolType` 欄位
-5. 進入「地圖 APP 用戶管理」頁面
+5. 進入「Line 用戶管理管理」頁面
 6. 測試設備綁定/解綁功能
 
 ---
@@ -110,23 +118,29 @@ curl -X POST https://binddevicetomapuser-kmzfyt3t5a-uc.a.run.app \
 ### 已知警告（可忽略）
 
 1. **firebase-functions 版本警告:**
+
    ```
    package.json indicates an outdated version of firebase-functions
    ```
+
    - 不影響功能運作
    - 建議未來升級時注意 breaking changes
 
 2. **functions.config() 棄用警告:**
+
    ```
    functions.config() API is deprecated
    ```
+
    - 2026年3月前需遷移到 .env
    - 目前功能仍正常運作
 
 3. **前端 chunk size 警告:**
+
    ```
    Some chunks are larger than 500 kB after minification
    ```
+
    - 不影響功能
    - 建議未來考慮 code-splitting 優化
 
@@ -135,6 +149,7 @@ curl -X POST https://binddevicetomapuser-kmzfyt3t5a-uc.a.run.app \
 ## 📝 部署日誌
 
 ### Cloud Functions 部署日誌
+
 ```
 ✔  functions[bindDeviceToMapUser(us-central1)] Successful update operation.
 ✔  functions[unbindDeviceFromMapUser(us-central1)] Successful update operation.
@@ -143,6 +158,7 @@ Function URL (unbindDeviceFromMapUser(us-central1)): https://unbinddevicefrommap
 ```
 
 ### Hosting 部署日誌
+
 ```
 ✔  hosting[safe-net-tw]: release complete
 Hosting URL: https://safe-net-tw.web.app
@@ -153,14 +169,17 @@ Hosting URL: https://safe-net-tw.web.app
 ## 🔗 相關連結
 
 ### 線上服務
+
 - **後台管理系統:** https://safe-net-tw.web.app
 - **Firebase Console:** https://console.firebase.google.com/project/safe-net-tw/overview
 
 ### API 端點
+
 - **bindDeviceToMapUser:** https://binddevicetomapuser-kmzfyt3t5a-uc.a.run.app
 - **unbindDeviceFromMapUser:** https://unbinddevicefrommapuser-kmzfyt3t5a-uc.a.run.app
 
 ### 文檔
+
 - `MAP_APP_API_ENDPOINTS.md` - API 完整文檔
 - `MAP_APP_DEVICE_BINDING_UPDATES.md` - 更新說明
 - `POOLTYPE_FIELD_GUIDE.md` - poolType 使用指南

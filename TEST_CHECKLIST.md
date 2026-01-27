@@ -9,7 +9,7 @@
 npm run dev
 # → http://localhost:3000
 
-# 終端機 2: Community Portal  
+# 終端機 2: Community Portal
 cd community-portal && npm run dev
 # → http://localhost:3002
 ```
@@ -31,7 +31,7 @@ cd community-portal && npm run dev
 - [ ] 點擊「新增」
 - [ ] 確認用戶出現在列表中
 
-**如果失敗**：檢查是否有可選擇的社區（先在「社區管理」建立）
+**如果失敗**：檢查是否有可選擇的社區（先在「Line OA 管理」建立）
 
 ---
 
@@ -45,6 +45,7 @@ cd community-portal && npm run dev
 - [ ] **預期**：側邊欄顯示所有功能選單
 
 **如果失敗**：
+
 - 開啟瀏覽器開發者工具（F12）
 - 查看 Console 錯誤訊息
 - 參考 `TESTING_NOTIFICATION_POINTS.md` 的除錯步驟
@@ -95,6 +96,7 @@ cd community-portal && npm run dev
 3. 重新整理 Community Portal 頁面
 
 **測試勾選功能**：
+
 - [ ] 勾選一個 gateway
 - [ ] **預期**：顯示「已設為通知點」綠色標籤
 - [ ] **預期**：下方出現「自訂通知訊息」輸入框
@@ -123,15 +125,18 @@ cd community-portal && npm run dev
 在開始前確認：
 
 **A. 長者已綁定設備**
+
 - [ ] 在 Community Portal「長者管理」
 - [ ] 點擊長者詳情
 - [ ] 確認有顯示綁定的設備
 
 **B. 社區有 LINE 設定**
-- [ ] 在 Admin「社區管理」
+
+- [ ] 在 Admin「Line OA 管理」
 - [ ] 確認 lineChannelAccessToken 有值
 
 **C. 有 LINE 接收者**
+
 - [ ] 在 Firestore Console 查看 `tenants/{id}/members`
 - [ ] 確認有 status='APPROVED' 的成員
 - [ ] 查看對應的 appUsers 有 lineUserId
@@ -168,6 +173,7 @@ cd community-portal && npm run dev
 ### 如果沒收到通知
 
 1. **檢查 Cloud Functions 日誌**：
+
    ```bash
    firebase functions:log --only receiveBeaconData --lines 50
    ```
@@ -238,7 +244,8 @@ cd community-portal && npm run dev
 ### 如果缺少資料
 
 在 Admin 管理後台建立：
-- 社區：「社區管理」頁面
+
+- 社區：「Line OA 管理」頁面
 - Gateway：「GateWay 管理」頁面
 - 設備：「Beacon 管理」頁面
 - LINE 成員：使用 LIFF app 加入
@@ -271,10 +278,12 @@ firebase functions:log --only receiveBeaconData
 所有修正已完成，可以開始測試。
 
 建議測試順序：
+
 1. 基本功能（登入、設備清單）→ 5 分鐘
 2. 通知點勾選 → 3 分鐘
 3. LINE 通知測試 → 10 分鐘
 
 如遇問題，參考：
+
 - `TESTING_NOTIFICATION_POINTS.md` - 詳細測試指南
 - `CHANGES_COMMUNITY_PORTAL.md` - 變更摘要

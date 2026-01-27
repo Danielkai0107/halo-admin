@@ -8,11 +8,10 @@ import {
   MapPin,
   LogOut,
   Menu,
-  X,
-  Building2,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { authService } from "../services/authService";
+import haloLogo from "../assets/halo_logo.png";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -21,7 +20,7 @@ interface LayoutProps {
 export const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const { user, tenant } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -30,6 +29,10 @@ export const Layout = ({ children }: LayoutProps) => {
     } catch (error) {
       console.error("登出失敗:", error);
     }
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
   const navigationItems = [
@@ -45,98 +48,100 @@ export const Layout = ({ children }: LayoutProps) => {
       {/* 頂部欄 */}
       <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-10">
         <div className="flex items-center justify-between px-4 py-3">
-          {/* 左側：選單按鈕 + 標題 */}
-          <div className="flex items-center space-x-4">
+          {/* 左側：選單按鈕 */}
+          <div className="flex items-center">
             <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100"
+              onClick={toggleSidebar}
+              className="btn btn--ghost btn--icon"
+              title={sidebarCollapsed ? "展開側邊欄" : "收起側邊欄"}
             >
-              {sidebarOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
+              <Menu
+                className="btn__icon"
+                style={{ width: "1.5rem", height: "1.5rem" }}
+              />
             </button>
-
-            <div className="flex items-center space-x-2">
-              <Building2 className="w-6 h-6 text-primary-600" />
-              <h1 className="text-xl font-bold text-gray-900">社區管理後台</h1>
-            </div>
           </div>
 
-          {/* 右側：社區名稱 + 用戶資訊 */}
-          <div className="flex items-center space-x-4">
-            {tenant && (
-              <div className="hidden sm:block text-sm">
-                <p className="text-gray-500">社區</p>
-                <p className="font-medium text-gray-900">{tenant.name}</p>
-              </div>
-            )}
-
-            {user && (
-              <div className="flex items-center space-x-3">
-                <div className="hidden md:block text-sm">
-                  <p className="text-gray-500">
-                    {user.role === "ADMIN" ? "管理員" : "成員"}
-                  </p>
-                  <p className="font-medium text-gray-900">{user.name}</p>
-                </div>
-
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">登出</span>
-                </button>
-              </div>
-            )}
+          {/* 中間：Logo */}
+          <div className="absolute left-1/2 transform -translate-x-1/2">
+            <img src={haloLogo} alt="Halo Logo" className="community-logo" />
           </div>
+
+          {/* 右側：保留空間平衡布局 */}
+          <div className="w-10"></div>
         </div>
       </header>
 
       {/* 側邊欄 */}
       <aside
-        className={`
-          fixed top-14 left-0 bottom-0 w-64 bg-white shadow-lg z-20 transform transition-transform duration-200 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0
-        `}
+        className={`sidebar ${sidebarCollapsed ? "sidebar--collapsed" : ""}`}
       >
-        <nav className="p-4 space-y-1">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-primary-50 text-primary-700 font-medium"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`
-                }
+        <div className="flex flex-col h-full">
+          <nav className="sidebar__nav flex-1">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
+                  }
+                  title={sidebarCollapsed ? item.label : ""}
+                >
+                  <Icon className="sidebar__icon" />
+                  {!sidebarCollapsed && <span>{item.label}</span>}
+                </NavLink>
+              );
+            })}
+          </nav>
+
+          {/* 用戶資訊 */}
+          {user && (
+            <div className="border-t border-gray-200 p-4">
+              <div
+                className={`flex items-center ${sidebarCollapsed ? "justify-center" : "space-x-3"}`}
               >
-                <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
+                {!sidebarCollapsed && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {user.name}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {user.role === "ADMIN" ? "管理員" : "成員"}
+                    </p>
+                    {tenant && (
+                      <p className="text-xs text-gray-400 truncate mt-1">
+                        {tenant.name}
+                      </p>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="mt-2 text-xs text-primary hover:text-primary-dark transition-colors"
+                    >
+                      登出
+                    </button>
+                  </div>
+                )}
+                {sidebarCollapsed && (
+                  <button
+                    onClick={handleLogout}
+                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="登出"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </aside>
 
-      {/* 遮罩層 (手機版) */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-10 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
       {/* 主內容區 */}
-      <main className="pt-14 lg:pl-64">
+      <main
+        className={`pt-14 transition-all duration-200 ${sidebarCollapsed ? "pl-20" : "pl-64"}`}
+      >
         <div className="p-6">{children}</div>
       </main>
     </div>

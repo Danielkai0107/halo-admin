@@ -20,13 +20,7 @@ import { deviceService } from "../services/deviceService";
 import { formatDistanceToNow, format } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import type { MapAppUser, Device } from "../types";
-import {
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-} from "firebase/firestore";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 interface MapUserActivity {
@@ -113,7 +107,7 @@ export const MapAppUserDetailPage = () => {
       try {
         // 載入用戶資料
         const userRes: any = await mapAppUserService.getOne(id);
-        console.log('Loaded user:', userRes.data);
+        console.log("Loaded user:", userRes.data);
         setUser(userRes.data);
 
         // 如果用戶有綁定設備，載入設備資訊
@@ -122,7 +116,7 @@ export const MapAppUserDetailPage = () => {
             const deviceRes: any = await deviceService.getOne(
               userRes.data.boundDeviceId,
             );
-            console.log('Loaded device:', deviceRes.data);
+            console.log("Loaded device:", deviceRes.data);
             setDevice(deviceRes.data);
           } catch (error) {
             console.error("Failed to load device:", error);
@@ -144,22 +138,22 @@ export const MapAppUserDetailPage = () => {
   const loadActivities = async (boundDeviceId: string | undefined) => {
     try {
       if (!boundDeviceId) {
-        console.log('No bound device, skipping activities load');
+        console.log("No bound device, skipping activities load");
         setActivities([]);
         return;
       }
 
-      console.log('Loading activities for device:', boundDeviceId);
+      console.log("Loading activities for device:", boundDeviceId);
 
       const hoursAgo = new Date();
       hoursAgo.setHours(hoursAgo.getHours() - timeRange);
-      console.log('Time range:', { timeRange, hoursAgo });
+      console.log("Time range:", { timeRange, hoursAgo });
 
       let activitiesData: MapUserActivity[] = [];
 
       // 從設備的子集合查詢活動記錄
       try {
-        console.log('Querying activities subcollection...');
+        console.log("Querying activities subcollection...");
         const activitiesQuery = query(
           collection(db, "devices", boundDeviceId, "activities"),
           orderBy("timestamp", "desc"),
@@ -167,17 +161,19 @@ export const MapAppUserDetailPage = () => {
         );
 
         const snapshot = await getDocs(activitiesQuery);
-        console.log(`Found ${snapshot.docs.length} total activities for device`);
+        console.log(
+          `Found ${snapshot.docs.length} total activities for device`,
+        );
 
         // 在客戶端過濾
         activitiesData = snapshot.docs
           .map((doc) => {
             const data = doc.data();
-            console.log('Activity data:', {
+            console.log("Activity data:", {
               id: doc.id,
               bindingType: data.bindingType,
               timestamp: data.timestamp,
-              gatewayName: data.gatewayName
+              gatewayName: data.gatewayName,
             });
             return {
               id: doc.id,
@@ -195,31 +191,39 @@ export const MapAppUserDetailPage = () => {
           })
           .filter((activity: any) => {
             // 客戶端過濾：只顯示 MAP_USER 類型的活動
-            if (activity.bindingType !== 'MAP_USER') {
-              console.log('Filtered out non-MAP_USER activity:', activity.id);
+            if (activity.bindingType !== "MAP_USER") {
+              console.log("Filtered out non-MAP_USER activity:", activity.id);
               return false;
             }
-            
+
             // 客戶端過濾：時間範圍
             const activityDate = safeToDate(activity.timestamp);
             if (!activityDate) {
-              console.log('Invalid timestamp:', activity.timestamp);
+              console.log("Invalid timestamp:", activity.timestamp);
               return false;
             }
             const inRange = activityDate >= hoursAgo;
             if (!inRange) {
-              console.log('Activity outside time range:', activityDate, hoursAgo);
+              console.log(
+                "Activity outside time range:",
+                activityDate,
+                hoursAgo,
+              );
             }
             return inRange;
           }) as MapUserActivity[];
 
-        console.log(`After filtering: ${activitiesData.length} MAP_USER activities`);
+        console.log(
+          `After filtering: ${activitiesData.length} MAP_USER activities`,
+        );
       } catch (error: any) {
-        console.error('Error loading activities:', error);
+        console.error("Error loading activities:", error);
         activitiesData = [];
       }
 
-      console.log(`Final: Loaded ${activitiesData.length} activities for device ${boundDeviceId}`);
+      console.log(
+        `Final: Loaded ${activitiesData.length} activities for device ${boundDeviceId}`,
+      );
       setActivities(activitiesData);
     } catch (error) {
       console.error("Failed to load activities:", error);
@@ -255,7 +259,7 @@ export const MapAppUserDetailPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-2xl font-bold text-gray-900">
-            地圖 App 用戶詳情
+            Line 用戶管理詳情
           </h1>
         </div>
         <button
@@ -424,7 +428,7 @@ export const MapAppUserDetailPage = () => {
 
                 <button
                   onClick={() => navigate(`/devices/${device.id}`)}
-                  className="w-full mt-4 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition text-sm font-medium"
+                  className="w-full mt-4 px-4 py-2 bg-primary-50 hover:bg-primary-100 text-primary-700 rounded-lg transition text-sm font-medium"
                 >
                   查看設備詳情
                 </button>
@@ -610,9 +614,9 @@ export const MapAppUserDetailPage = () => {
                               href={`https://www.google.com/maps?q=${activity.latitude},${activity.longitude}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:underline font-mono bg-white px-2 py-1 rounded inline-block"
+                              className="text-xs text-primary-600 hover:underline font-mono bg-white px-2 py-1 rounded inline-block"
                             >
-                              📍 {activity.latitude.toFixed(6)},{" "}
+                              {activity.latitude.toFixed(6)},{" "}
                               {activity.longitude.toFixed(6)}
                             </a>
                           )}

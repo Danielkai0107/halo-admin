@@ -66,7 +66,7 @@ export const assignAlert = functions.https.onCall(async (data: AssignAlertData, 
     }
 
     // 4. 獲取被分配者的 App User 資料
-    const appUserDoc = await db.collection('line_users').doc(assignedTo).get();
+    const appUserDoc = await db.collection('appUsers').doc(assignedTo).get();
     if (!appUserDoc.exists) {
       throw new functions.https.HttpsError('not-found', '找不到用戶資料');
     }

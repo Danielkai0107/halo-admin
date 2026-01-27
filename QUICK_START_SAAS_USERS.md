@@ -1,13 +1,15 @@
 # SaaS 用戶管理快速開始
 
-## 快速建立第一個社區管理員帳號
+## 快速建立第一個Line OA 管理員帳號
 
 ### 方法 1: 透過 Admin 介面（推薦）
 
 1. **啟動 Admin 管理後台**
+
    ```bash
    npm run dev
    ```
+
    訪問：`http://localhost:3000`
 
 2. **登入 Admin**
@@ -54,7 +56,7 @@ node create-saas-user.cjs admin@test.com test123456 "測試管理員" YOUR_TENAN
 
 ### 在 Admin 介面中
 
-1. 前往「社區管理」頁面
+1. 前往「Line OA 管理」頁面
 2. 社區列表中可以看到每個社區的資訊
 3. 記下社區的 ID（通常在 URL 或資料中顯示）
 
@@ -85,18 +87,21 @@ cd ..
 ### 步驟 2: 確認有可用的社區
 
 **選項 A: 使用現有社區**
+
 - 在 Admin 管理後台查看現有社區
 - 記下社區 ID
 
 **選項 B: 建立新社區**
+
 1. 啟動 Admin：`npm run dev`
-2. 登入並前往「社區管理」
+2. 登入並前往「Line OA 管理」
 3. 新增一個測試社區
 4. 記下社區 ID
 
 ### 步驟 3: 建立 SaaS 用戶
 
 使用 Admin 介面：
+
 1. 訪問 `http://localhost:3000/saas-users`
 2. 點擊「新增用戶」
 3. 填寫表單並提交
@@ -104,6 +109,7 @@ cd ..
 ### 步驟 4: 測試登入
 
 1. 啟動 Community Portal：
+
    ```bash
    cd community-portal
    npm run dev
@@ -154,14 +160,17 @@ cd ..
 ### 建立用戶時出錯
 
 **錯誤**: "此 Email 已被使用"
+
 - **原因**: Email 已在 Firebase Auth 中註冊
 - **解決**: 使用其他 Email，或在 Firebase Console 刪除舊帳號
 
 **錯誤**: "密碼強度不足"
+
 - **原因**: 密碼少於 6 個字元
 - **解決**: 使用至少 6 個字元的密碼
 
 **錯誤**: "請選擇社區"
+
 - **原因**: 未選擇社區
 - **解決**: 確認 tenants 集合有資料，並在下拉選單中選擇
 
@@ -203,6 +212,7 @@ cd ..
 建立兩個測試帳號：
 
 **管理員測試帳號**：
+
 ```
 Email: admin-test@community.com
 密碼: test123456
@@ -210,6 +220,7 @@ Email: admin-test@community.com
 ```
 
 **成員測試帳號**：
+
 ```
 Email: member-test@community.com
 密碼: test123456
@@ -223,12 +234,14 @@ Email: member-test@community.com
 同時運行兩個開發伺服器：
 
 **終端機 1** - Admin 管理後台：
+
 ```bash
 npm run dev
 # http://localhost:3000
 ```
 
 **終端機 2** - Community Portal：
+
 ```bash
 cd community-portal
 npm run dev
@@ -258,6 +271,7 @@ firebase deploy --only hosting
 ```
 
 部署後訪問：
+
 - Admin: `https://safe-net-tw.web.app/saas-users`
 - Community Portal: `https://safe-net-tw.web.app/community`
 
@@ -268,8 +282,8 @@ firebase deploy --only hosting
 1. 建立測試帳號
 2. 測試所有功能
 3. 為實際使用的社區建立管理員帳號
-4. 提供登入資訊給各社區管理員
-5. 培訓社區管理員使用 Community Portal
+4. 提供登入資訊給各Line OA 管理員
+5. 培訓Line OA 管理員使用 Community Portal
 
 ---
 

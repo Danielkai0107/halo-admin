@@ -34,11 +34,11 @@ body {
   }
 
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed;
+    @apply bg-primary-500 hover:bg-primary-600 text-white font-medium shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed;
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium border border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed;
   }
 
   .btn-danger {

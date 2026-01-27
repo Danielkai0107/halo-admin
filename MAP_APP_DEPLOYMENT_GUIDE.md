@@ -2,7 +2,7 @@
 
 ## 📦 實作摘要
 
-本次更新為系統新增了完整的地圖 APP 用戶支援，與現有的 Tenant-Elder 系統完全獨立運作。
+本次更新為系統新增了完整的Line 用戶管理支援，與現有的 Tenant-Elder 系統完全獨立運作。
 
 ### ✅ 已完成項目
 
@@ -11,7 +11,7 @@
 - **檔案:** `src/types/index.ts`
 - **新增型別:**
   - `PoolType`: 設備池類型 (TENANT | PUBLIC)
-  - `MapAppUser`: 地圖 APP 用戶
+  - `MapAppUser`: Line 用戶管理
   - `MapUserNotificationPoint`: 用戶通知點位
   - `MapUserActivity`: 用戶活動記錄
 - **調整型別:**

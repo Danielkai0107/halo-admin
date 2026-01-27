@@ -1,18 +1,6 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
 
-// 標準錯誤碼定義
-const ErrorCodes = {
-  USER_NOT_FOUND: 'USER_NOT_FOUND',
-  DEVICE_NOT_FOUND: 'DEVICE_NOT_FOUND',
-  DEVICE_ALREADY_BOUND: 'DEVICE_ALREADY_BOUND',
-  NO_BOUND_DEVICE: 'NO_BOUND_DEVICE',
-  UNAUTHORIZED: 'UNAUTHORIZED',
-  VALIDATION_ERROR: 'VALIDATION_ERROR',
-  INTERNAL_ERROR: 'INTERNAL_ERROR',
-  ACCOUNT_DELETED: 'ACCOUNT_DELETED',
-} as const;
-
 interface BindDeviceRequest {
   userId: string;
   deviceId?: string; // 設備 ID（與 deviceName 二選一）
@@ -34,7 +22,7 @@ interface UnbindDeviceRequest {
  * Request Body:
  * - userId: string (必填)
  * - deviceId?: string (設備 ID，與 deviceName 二選一)
- * - deviceName?: string (產品序號，與 deviceName 二選一)
+ * - deviceName?: string (產品序號，與 deviceId 二選一)
  * - avatar?: string (用戶頭像，儲存在 mapAppUsers)
  * - nickname?: string (設備暱稱，儲存在 devices)
  * - age?: number (使用者年齡，儲存在 devices)
@@ -55,11 +43,7 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
   }
 
   if (req.method !== "POST") {
-    res.status(405).json({ 
-      success: false, 
-      error: "不支援此請求方法",
-      errorCode: ErrorCodes.VALIDATION_ERROR,
-    });
+    res.status(405).json({ success: false, error: "Method not allowed" });
     return;
   }
 
@@ -67,58 +51,34 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
     // Verify Firebase ID Token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({
-        success: false,
-        error: "未授權：缺少或無效的認證令牌",
-        errorCode: ErrorCodes.UNAUTHORIZED,
-      });
+      res
+        .status(401)
+        .json({
+          success: false,
+          error: "Unauthorized: Missing or invalid token",
+        });
       return;
     }
 
     const idToken = authHeader.split("Bearer ")[1];
-    let decodedToken;
-    try {
-      decodedToken = await admin.auth().verifyIdToken(idToken);
-    } catch (tokenError) {
-      res.status(401).json({
-        success: false,
-        error: "未授權：認證令牌無效或已過期",
-        errorCode: ErrorCodes.UNAUTHORIZED,
-      });
-      return;
-    }
-    
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
     const authenticatedUserId = decodedToken.uid;
 
     const body: BindDeviceRequest = req.body;
 
-    // Validate request - 必須提供 userId
+    // Validate request - 必須提供 deviceId 或 deviceName 其中之一
     if (!body.userId) {
       res.status(400).json({
         success: false,
-        error: "參數驗證失敗",
-        errorCode: ErrorCodes.VALIDATION_ERROR,
-        errorDetails: {
-          fields: {
-            userId: "缺少必填欄位 userId"
-          }
-        }
+        error: "Missing required field: userId",
       });
       return;
     }
 
-    // 必須提供 deviceId 或 deviceName 其中之一
     if (!body.deviceId && !body.deviceName) {
       res.status(400).json({
         success: false,
-        error: "參數驗證失敗",
-        errorCode: ErrorCodes.VALIDATION_ERROR,
-        errorDetails: {
-          fields: {
-            deviceId: "必須提供 deviceId 或 deviceName 其中之一",
-            deviceName: "必須提供 deviceId 或 deviceName 其中之一"
-          }
-        }
+        error: "Missing required field: deviceId or deviceName",
       });
       return;
     }
@@ -129,7 +89,7 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
     if (body.userId !== authenticatedUserId) {
       // Check if authenticated user is an admin
       const adminDoc = await db
-        .collection("admin_users")
+        .collection("users")
         .doc(authenticatedUserId)
         .get();
       const adminData = adminDoc.data();
@@ -140,31 +100,18 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
       ) {
         res.status(403).json({
           success: false,
-          error: "禁止操作：無法為其他用戶綁定設備",
-          errorCode: ErrorCodes.UNAUTHORIZED,
+          error: "Forbidden: Cannot bind device to another user",
         });
         return;
       }
     }
 
     // Check if user exists
-    const userDoc = await db.collection("app_users").doc(body.userId).get();
+    const userDoc = await db.collection("mapAppUsers").doc(body.userId).get();
     if (!userDoc.exists) {
       res.status(404).json({
         success: false,
-        error: "用戶不存在",
-        errorCode: ErrorCodes.USER_NOT_FOUND,
-      });
-      return;
-    }
-
-    // 檢查用戶是否已被刪除標記
-    const userData = userDoc.data();
-    if (userData?.isDeleted) {
-      res.status(410).json({
-        success: false,
-        error: "帳號已被刪除",
-        errorCode: ErrorCodes.ACCOUNT_DELETED,
+        error: "User not found",
       });
       return;
     }
@@ -181,8 +128,7 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
       if (!deviceDoc.exists) {
         res.status(404).json({
           success: false,
-          error: "設備不存在，請檢查產品序號",
-          errorCode: ErrorCodes.DEVICE_NOT_FOUND,
+          error: "Device not found",
         });
         return;
       }
@@ -198,8 +144,7 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
       if (deviceQuery.empty) {
         res.status(404).json({
           success: false,
-          error: "設備不存在，請檢查產品序號",
-          errorCode: ErrorCodes.DEVICE_NOT_FOUND,
+          error: `Device with deviceName '${normalizedDeviceName}' not found`,
         });
         return;
       }
@@ -209,14 +154,7 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
     } else {
       res.status(400).json({
         success: false,
-        error: "參數驗證失敗",
-        errorCode: ErrorCodes.VALIDATION_ERROR,
-        errorDetails: {
-          fields: {
-            deviceId: "必須提供 deviceId 或 deviceName 其中之一",
-            deviceName: "必須提供 deviceId 或 deviceName 其中之一"
-          }
-        }
+        error: "Missing required field: deviceId or deviceName",
       });
       return;
     }
@@ -225,10 +163,9 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
 
     // ⚠️ 檢查設備綁定狀態（使用新的 bindingType）
     if (deviceData?.bindingType === "ELDER") {
-      res.status(409).json({
+      res.status(400).json({
         success: false,
-        error: "此設備已被其他用戶綁定",
-        errorCode: ErrorCodes.DEVICE_ALREADY_BOUND,
+        error: "Device is already bound to an elder in the tenant system",
       });
       return;
     }
@@ -238,15 +175,15 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
       deviceData?.bindingType === "MAP_USER" &&
       deviceData.boundTo !== body.userId
     ) {
-      res.status(409).json({
+      res.status(400).json({
         success: false,
-        error: "此設備已被其他用戶綁定",
-        errorCode: ErrorCodes.DEVICE_ALREADY_BOUND,
+        error: "Device is already bound to another map app user",
       });
       return;
     }
 
     // Unbind old device if user already has one
+    const userData = userDoc.data();
     if (userData?.boundDeviceId && userData.boundDeviceId !== actualDeviceId) {
       await db.collection("devices").doc(userData.boundDeviceId).update({
         bindingType: "UNBOUND",
@@ -261,29 +198,18 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
 
     // Bind device to user (使用新的資料結構)
     const boundAt = admin.firestore.FieldValue.serverTimestamp();
-    
-    // 統一通知架構：綁定時同步 FCM token 到設備
-    const deviceUpdateData: any = {
-      bindingType: "MAP_USER",
-      boundTo: body.userId,
-      boundAt: boundAt,
-      mapUserNickname: body.nickname || null,
-      mapUserAge: body.age || null,
-      mapUserGender: body.gender || null,
-      updatedAt: boundAt,
-    };
-
-    // 如果用戶有 FCM token，同步到設備
-    if (userData?.fcmToken) {
-      deviceUpdateData.fcmToken = userData.fcmToken;
-      deviceUpdateData.notificationEnabled = true;
-      console.log(`Syncing FCM token to device ${actualDeviceId}`);
-    }
-
     await db
       .collection("devices")
       .doc(actualDeviceId)
-      .update(deviceUpdateData);
+      .update({
+        bindingType: "MAP_USER",
+        boundTo: body.userId,
+        boundAt: boundAt,
+        mapUserNickname: body.nickname || null,
+        mapUserAge: body.age || null,
+        mapUserGender: body.gender || null,
+        updatedAt: boundAt,
+      });
 
     // Update user's bound device and avatar
     const userUpdateData: any = {
@@ -296,7 +222,7 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
       userUpdateData.avatar = body.avatar;
     }
 
-    await db.collection("app_users").doc(body.userId).update(userUpdateData);
+    await db.collection("mapAppUsers").doc(body.userId).update(userUpdateData);
 
     res.json({
       success: true,
@@ -319,8 +245,7 @@ export const bindDeviceToMapUser = onRequest(async (req, res) => {
     console.error("Error in bindDeviceToMapUser:", error);
     res.status(500).json({
       success: false,
-      error: "伺服器內部錯誤",
-      errorCode: ErrorCodes.INTERNAL_ERROR,
+      error: error.message || "Internal server error",
     });
   }
 });
@@ -347,11 +272,7 @@ export const unbindDeviceFromMapUser = onRequest(async (req, res) => {
   }
 
   if (req.method !== "POST") {
-    res.status(405).json({ 
-      success: false, 
-      error: "不支援此請求方法",
-      errorCode: ErrorCodes.VALIDATION_ERROR,
-    });
+    res.status(405).json({ success: false, error: "Method not allowed" });
     return;
   }
 
@@ -359,27 +280,17 @@ export const unbindDeviceFromMapUser = onRequest(async (req, res) => {
     // Verify Firebase ID Token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({
-        success: false,
-        error: "未授權：缺少或無效的認證令牌",
-        errorCode: ErrorCodes.UNAUTHORIZED,
-      });
+      res
+        .status(401)
+        .json({
+          success: false,
+          error: "Unauthorized: Missing or invalid token",
+        });
       return;
     }
 
     const idToken = authHeader.split("Bearer ")[1];
-    let decodedToken;
-    try {
-      decodedToken = await admin.auth().verifyIdToken(idToken);
-    } catch (tokenError) {
-      res.status(401).json({
-        success: false,
-        error: "未授權：認證令牌無效或已過期",
-        errorCode: ErrorCodes.UNAUTHORIZED,
-      });
-      return;
-    }
-    
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
     const authenticatedUserId = decodedToken.uid;
 
     const body: UnbindDeviceRequest = req.body;
@@ -388,13 +299,7 @@ export const unbindDeviceFromMapUser = onRequest(async (req, res) => {
     if (!body.userId) {
       res.status(400).json({
         success: false,
-        error: "參數驗證失敗",
-        errorCode: ErrorCodes.VALIDATION_ERROR,
-        errorDetails: {
-          fields: {
-            userId: "缺少必填欄位 userId"
-          }
-        }
+        error: "Missing required field: userId",
       });
       return;
     }
@@ -405,7 +310,7 @@ export const unbindDeviceFromMapUser = onRequest(async (req, res) => {
     if (body.userId !== authenticatedUserId) {
       // Check if authenticated user is an admin
       const adminDoc = await db
-        .collection("admin_users")
+        .collection("users")
         .doc(authenticatedUserId)
         .get();
       const adminData = adminDoc.data();
@@ -416,41 +321,27 @@ export const unbindDeviceFromMapUser = onRequest(async (req, res) => {
       ) {
         res.status(403).json({
           success: false,
-          error: "禁止操作：無法解綁其他用戶的設備",
-          errorCode: ErrorCodes.UNAUTHORIZED,
+          error: "Forbidden: Cannot unbind another user's device",
         });
         return;
       }
     }
 
     // Check if user exists
-    const userDoc = await db.collection("app_users").doc(body.userId).get();
+    const userDoc = await db.collection("mapAppUsers").doc(body.userId).get();
     if (!userDoc.exists) {
       res.status(404).json({
         success: false,
-        error: "用戶不存在",
-        errorCode: ErrorCodes.USER_NOT_FOUND,
+        error: "User not found",
       });
       return;
     }
 
     const userData = userDoc.data();
-
-    // 檢查用戶是否已被刪除標記
-    if (userData?.isDeleted) {
-      res.status(410).json({
-        success: false,
-        error: "帳號已被刪除",
-        errorCode: ErrorCodes.ACCOUNT_DELETED,
-      });
-      return;
-    }
-
     if (!userData?.boundDeviceId) {
       res.status(400).json({
         success: false,
-        error: "您尚未綁定任何設備",
-        errorCode: ErrorCodes.NO_BOUND_DEVICE,
+        error: "User has no bound device",
       });
       return;
     }
@@ -520,34 +411,7 @@ export const unbindDeviceFromMapUser = onRequest(async (req, res) => {
       await archiveAndDeleteActivities(activitiesSnapshot);
     }
 
-    // 2. 統一通知架構：刪除設備的通知點子集合
-    const notificationPointsRef = db
-      .collection("devices")
-      .doc(deviceId)
-      .collection("notificationPoints");
-    
-    const deleteNotificationPoints = async (
-      snapshot: FirebaseFirestore.QuerySnapshot,
-    ) => {
-      if (snapshot.empty) return;
-
-      const batch = db.batch();
-      snapshot.docs.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
-      await batch.commit();
-    };
-
-    // 刪除所有通知點（分批處理）
-    let notificationPointsSnapshot = await notificationPointsRef.limit(500).get();
-    await deleteNotificationPoints(notificationPointsSnapshot);
-
-    while (notificationPointsSnapshot.size === 500) {
-      notificationPointsSnapshot = await notificationPointsRef.limit(500).get();
-      await deleteNotificationPoints(notificationPointsSnapshot);
-    }
-
-    // 3. Unbind device (使用新的資料結構，清除通知相關欄位)
+    // 2. Unbind device (使用新的資料結構)
     await db.collection("devices").doc(deviceId).update({
       bindingType: "UNBOUND",
       boundTo: null,
@@ -555,29 +419,24 @@ export const unbindDeviceFromMapUser = onRequest(async (req, res) => {
       mapUserNickname: null,
       mapUserAge: null,
       mapUserGender: null,
-      // 統一通知架構：清除通知相關欄位
-      fcmToken: null,
-      notificationEnabled: null,
-      inheritedNotificationPointIds: null,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // 4. Update user (只清空 boundDeviceId)
-    await db.collection("app_users").doc(body.userId).update({
+    // 3. Update user (只清空 boundDeviceId)
+    await db.collection("mapAppUsers").doc(body.userId).update({
       boundDeviceId: null,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     res.json({
       success: true,
-      message: "設備解綁成功",
+      message: "Device unbound successfully",
     });
   } catch (error: any) {
     console.error("Error in unbindDeviceFromMapUser:", error);
     res.status(500).json({
       success: false,
-      error: "伺服器內部錯誤",
-      errorCode: ErrorCodes.INTERNAL_ERROR,
+      error: error.message || "Internal server error",
     });
   }
 });

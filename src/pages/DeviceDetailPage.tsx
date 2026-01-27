@@ -420,7 +420,7 @@ export const DeviceDetailPage = () => {
                   </div>
                   <button
                     onClick={() => navigate(`/elders/${elder.id}`)}
-                    className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition text-sm font-medium"
+                    className="px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition text-sm font-medium"
                   >
                     查看詳情
                   </button>

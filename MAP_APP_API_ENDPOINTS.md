@@ -252,8 +252,8 @@ const idToken = await user.getIdToken();
 **端點:** `POST /deleteMapAppUser`  
 **認證:** 必需
 
-**說明:** 此 API 執行完整的用戶刪除流程，包含：
-0. **發送 FCM 推送通知**（類型為 `ACCOUNT_DELETED`），通知用戶帳號即將被刪除
+**說明:** 此 API 執行完整的用戶刪除流程，包含：0. **發送 FCM 推送通知**（類型為 `ACCOUNT_DELETED`），通知用戶帳號即將被刪除
+
 1. 檢查並解綁設備（如果有綁定）
 2. 將設備活動記錄匿名化並歸檔到 `anonymousActivities` collection
 3. 刪除用戶的所有通知點位
@@ -305,6 +305,7 @@ const idToken = await user.getIdToken();
 **App 端處理建議:**
 
 App 端收到 `type: "ACCOUNT_DELETED"` 的通知後應該：
+
 1. 清除本地數據
 2. 登出 Firebase Auth
 3. 顯示通知或對話框
@@ -337,7 +338,7 @@ App 端收到 `type: "ACCOUNT_DELETED"` 的通知後應該：
 **端點:** `GET /getPublicGateways`  
 **認證:** 不需要 (公開資料)
 
-**說明:** 回傳所有啟用的接收點（包括社區專用和公共接收點）。對地圖 APP 用戶來說，所有的接收點都是安全網的一部分。
+**說明:** 回傳所有啟用的接收點（包括社區專用和公共接收點）。對Line 用戶管理來說，所有的接收點都是安全網的一部分。
 
 **回應:**
 
@@ -916,7 +917,7 @@ const profile = await fetch(
 
 #### Collections
 
-- `mapAppUsers`: 地圖 APP 用戶資料
+- `mapAppUsers`: Line 用戶管理資料
   - 只保留 `boundDeviceId` 作為雙向引用
   - 不再儲存 `deviceNickname`, `deviceOwnerAge`, `boundAt`
 - `mapUserNotificationPoints`: 用戶自訂通知點位

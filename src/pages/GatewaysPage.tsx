@@ -255,7 +255,11 @@ export const GatewaysPage = () => {
       },
     };
 
-    const { bg, text, label } = config[type] || { bg: "bg-gray-100", text: "text-gray-800", label: type };
+    const { bg, text, label } = config[type] || {
+      bg: "bg-gray-100",
+      text: "text-gray-800",
+      label: type,
+    };
 
     return (
       <span
@@ -271,16 +275,13 @@ export const GatewaysPage = () => {
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">GateWay 管理</h1>
-          <p className="text-gray-600 mt-1">
+          <h2 className="text-2xl font-bold text-gray-900">GateWay 管理</h2>
+          <p className="text-sm text-gray-600 mt-1">
             管理所有訊號接收點（可選擇標記所在社區範圍）
-          </p>
-          <p className="text-sm text-blue-600 mt-1">
-            接收點不需要分配社區，可接收所有設備訊號。標記社區僅用於位置管理。
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -304,7 +305,7 @@ export const GatewaysPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex items-center space-x-4">
+      <div className="flex items-center space-x-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -656,33 +657,25 @@ export const GatewaysPage = () => {
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
               學區
             </span>
-            <span className="text-gray-600">
-              - 學校區域內的接收點
-            </span>
+            <span className="text-gray-600">- 學校區域內的接收點</span>
           </div>
           <div className="flex items-center space-x-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
               安全區
             </span>
-            <span className="text-gray-600">
-              - 安全區域內的接收點
-            </span>
+            <span className="text-gray-600">- 安全區域內的接收點</span>
           </div>
           <div className="flex items-center space-x-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               觀察區
             </span>
-            <span className="text-gray-600">
-              - 需要觀察監控的區域
-            </span>
+            <span className="text-gray-600">- 需要觀察監控的區域</span>
           </div>
           <div className="flex items-center space-x-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
               停用
             </span>
-            <span className="text-gray-600">
-              - 已停用的接收點
-            </span>
+            <span className="text-gray-600">- 已停用的接收點</span>
           </div>
         </div>
       </div>

@@ -2,16 +2,18 @@
 
 ## 系統簡介
 
-Community Portal 是一個專為社區管理員（里長、協會）設計的照護管理平台，提供長者管理、設備監控、通知設定和數據報告功能。
+Community Portal 是一個專為Line OA 管理員（里長、協會）設計的照護管理平台，提供長者管理、設備監控、通知設定和數據報告功能。
 
 ---
 
 ## 立即開始
 
 ### 建立帳號
+
 Admin: https://safe-net-tw.web.app/saas-users
 
 ### 登入使用
+
 Community Portal: https://safe-net-tw.web.app/community
 
 ---
@@ -21,6 +23,7 @@ Community Portal: https://safe-net-tw.web.app/community
 ### 1. 社區概況（Dashboard）
 
 **數據總覽**：
+
 - 總長者數、活躍率、設備覆蓋率、今日通知數
 - 不活躍長者預警（需關懷名單）
 - 設備健康狀況（低電量、離線）
@@ -28,6 +31,7 @@ Community Portal: https://safe-net-tw.web.app/community
 - 活動趨勢分析
 
 **報告匯出**：
+
 - 完整統計報告
 - 文字格式
 - 適合週報/月報
@@ -35,11 +39,13 @@ Community Portal: https://safe-net-tw.web.app/community
 ### 2. 長者管理
 
 **Table 格式**：
+
 - 顯示長者資料、設備狀態、最後活動
 - 搜尋功能
 - Modal 新增/編輯（含設備選擇）
 
 **長者詳情**：
+
 - 基本資料
 - 綁定設備
 - 設備足跡（時間範圍篩選）
@@ -47,6 +53,7 @@ Community Portal: https://safe-net-tw.web.app/community
 ### 3. 設備清單
 
 **Table 格式**：
+
 - 顯示設備狀態、電池、信號
 - 搜尋和篩選
 - 查看詳情（Modal）
@@ -61,6 +68,7 @@ Community Portal: https://safe-net-tw.web.app/community
 ### 5. 通知點管理
 
 **Table + Modal**：
+
 - Table 顯示已設定的通知點
 - Modal 選擇要監控的位置
 - 搜尋功能
@@ -91,26 +99,31 @@ Community Portal: https://safe-net-tw.web.app/community
 ### Dashboard 核心數據
 
 **活躍率**：
+
 - 24小時內有活動的長者比例
 - 關鍵安全指標
 - 目標：維持 90% 以上
 
 **設備覆蓋率**：
+
 - 已綁定設備的長者比例
 - 服務完整度指標
 - 目標：100%
 
 **不活躍長者**：
+
 - 超過 24 小時未活動
 - 最高優先關懷對象
 - 目標：0 位
 
 **低電量設備**：
+
 - 電池少於 20%
 - 需要更換
 - 目標：0 個
 
 **熱門點位**：
+
 - 近7天感應次數排名
 - 了解長者活動模式
 - 用於服務規劃
@@ -190,7 +203,7 @@ Admin（總公司）
   ↓ 建立
 SaaS 用戶
   ↓ 登入
-Community Portal（社區管理員）
+Community Portal（Line OA 管理員）
   ↓ 設定
 通知點 + 長者管理
   ↓ 觸發
@@ -204,6 +217,7 @@ LINE 通知
 ## 完整功能列表
 
 ### Dashboard
+
 - [x] 核心指標卡片
 - [x] 不活躍長者預警
 - [x] 設備健康狀況
@@ -213,6 +227,7 @@ LINE 通知
 - [x] 報告匯出
 
 ### 長者管理
+
 - [x] Table 顯示
 - [x] 搜尋功能
 - [x] Modal 新增/編輯
@@ -221,15 +236,18 @@ LINE 通知
 - [x] 設備足跡
 
 ### 設備清單
+
 - [x] Table 顯示
 - [x] 搜尋/篩選
 - [x] 查看詳情
 
 ### 通知記錄
+
 - [x] 顯示歷史
 - [x] 篩選功能
 
 ### 通知點
+
 - [x] Table 顯示
 - [x] Modal 選擇
 - [x] 搜尋功能
@@ -239,14 +257,17 @@ LINE 通知
 ## 重要文檔
 
 **快速開始**：
+
 - `START_HERE.md` - 快速開始
 - `使用指南_一頁版.md` - 一頁參考
 
 **功能說明**：
+
 - `Dashboard功能說明.md` - Dashboard 詳細說明
 - `Community_Portal_完整指南.md` - 完整功能指南
 
 **技術文檔**：
+
 - `所有功能最終確認.md` - 功能確認
 - `Community_Portal_最終完成.md` - 專案總結
 

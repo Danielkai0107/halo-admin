@@ -101,12 +101,12 @@ export const UUIDsPage = () => {
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">UUID 管理</h1>
-          <p className="text-gray-600 mt-1">管理 Beacon 服務識別碼（UUID）</p>
+          <h2 className="text-2xl font-bold text-gray-900">UUID 管理</h2>
+          <p className="text-sm text-gray-600 mt-1">管理 Beacon 服務識別碼（UUID）</p>
           <p className="text-sm text-blue-600 mt-1">
             統一管理公司使用的 UUID，方便在設備管理中選擇
           </p>
@@ -179,7 +179,7 @@ export const UUIDsPage = () => {
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleEdit(uuid)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-2 text-primary-600 hover:bg-primary-50 rounded transition-colors"
                           title="編輯"
                         >
                           <Edit className="w-4 h-4" />

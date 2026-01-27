@@ -62,7 +62,7 @@ exports.completeAlert = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('failed-precondition', '只有已接受的警報才能標記完成');
         }
         // 4. 獲取成員資料
-        const memberDoc = await db.collection('line_users').doc(memberId).get();
+        const memberDoc = await db.collection('appUsers').doc(memberId).get();
         const memberName = memberDoc.exists ? (_a = memberDoc.data()) === null || _a === void 0 ? void 0 : _a.name : '成員';
         // 5. 更新警報狀態為已解決
         await db.collection('alerts').doc(alertId).update({
@@ -90,7 +90,7 @@ exports.completeAlert = functions.https.onCall(async (data, context) => {
                 // 通知所有管理員
                 const notificationPromises = adminsQuery.docs.map(async (doc) => {
                     const adminData = doc.data();
-                    const adminUserDoc = await db.collection('line_users').doc(adminData.appUserId).get();
+                    const adminUserDoc = await db.collection('appUsers').doc(adminData.appUserId).get();
                     const adminUser = adminUserDoc.data();
                     if (adminUser === null || adminUser === void 0 ? void 0 : adminUser.lineUserId) {
                         const message = `✅ 警報已完成\n\n${memberName} 已完成處理警報\n\n警報：${alert === null || alert === void 0 ? void 0 : alert.title}\n長輩：${elderName}\n${resolution ? `處理說明：${resolution}` : ''}`;

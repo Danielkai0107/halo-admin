@@ -11,7 +11,7 @@
 ✅ 社區中被標註 tag 的設備通知點會帶入，移除 tag 會解除  
 ✅ App 綁定後通知點紀錄在裝置下而非用戶下  
 ✅ 解除綁定後變成匿名資料，重新設定  
-✅ 在不影響目前通知功能和前端操作下完成修改  
+✅ 在不影響目前通知功能和前端操作下完成修改
 
 ## 主要變更
 
@@ -22,11 +22,11 @@
 ```typescript
 interface Device {
   // ... 現有欄位 ...
-  
+
   // 新增：通知相關欄位
-  fcmToken?: string | null;                     // FCM 推送 token（從 app_users 移過來）
-  notificationEnabled?: boolean;                // 是否啟用通知
-  inheritedNotificationPointIds?: string[];     // 從社區繼承的通知點 gateway IDs
+  fcmToken?: string | null; // FCM 推送 token（從 app_users 移過來）
+  notificationEnabled?: boolean; // 是否啟用通知
+  inheritedNotificationPointIds?: string[]; // 從社區繼承的通知點 gateway IDs
 }
 ```
 
@@ -148,7 +148,7 @@ interface DeviceNotificationPoint {
 
 - `app_users.fcmToken` - 保留
 - `appUserNotificationPoints` - 保留
-- `tenantNotificationPoints` - 保留（社區管理員仍使用）
+- `tenantNotificationPoints` - 保留（Line OA 管理員仍使用）
 
 ## 新功能
 

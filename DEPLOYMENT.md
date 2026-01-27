@@ -47,6 +47,7 @@ firebase deploy
 ```
 
 這將部署：
+
 - ✅ Hosting（網站）
 - ✅ Firestore Rules（安全規則）
 - ✅ Firestore Indexes（索引）
@@ -58,6 +59,7 @@ firebase deploy
 已創建以下配置文件：
 
 1. **`.firebaserc`** - 專案配置
+
    ```json
    {
      "projects": {
@@ -104,7 +106,7 @@ firebase hosting:channel:open live
 3. 驗證所有功能：
    - ✅ 登入認證
    - ✅ 儀表板顯示
-   - ✅ 社區管理
+   - ✅ Line OA 管理
    - ✅ 長者管理
    - ✅ 設備管理
    - ✅ 接收點管理
@@ -167,7 +169,7 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 ```
 
@@ -219,18 +221,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build
         run: npm run build
-      
+
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
           channelId: live
           projectId: safe-net-tw
 ```
@@ -309,6 +311,7 @@ const perf = getPerformance(app);
 ### 估算使用量
 
 小型社區（100 長者）：
+
 - 讀取：~5,000/日（遠低於限制）
 - 寫入：~1,000/日（遠低於限制）
 - 儲存：~100 MB（遠低於限制）
@@ -355,6 +358,7 @@ firebase deploy --only hosting
 ### 部署到生產環境前
 
 1. **更新 Firestore 規則**
+
    ```bash
    # 編輯 firestore.rules，啟用生產環境規則
    # 然後部署
@@ -362,6 +366,7 @@ firebase deploy --only hosting
    ```
 
 2. **啟用 App Check**（防止濫用）
+
    ```bash
    # 在 Firebase Console 啟用 App Check
    ```

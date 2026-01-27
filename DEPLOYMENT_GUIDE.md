@@ -8,20 +8,22 @@
 admin/
 ├── src/                     # Admin 管理後台（總公司用）
 ├── liff/                    # LINE LIFF 應用（社區成員用）
-├── community-portal/        # 社區管理網頁版（社區管理員用）
+├── community-portal/        # Line OA 管理網頁版（Line OA 管理員用）
 └── functions/              # Cloud Functions（後端 API）
 ```
 
 ## 部署腳本
 
 ### 1. deploy-community-portal.sh
-部署社區管理網頁版
+
+部署Line OA 管理網頁版
 
 ```bash
 ./deploy-community-portal.sh
 ```
 
 **執行步驟**：
+
 1. 構建 community-portal 應用
 2. 複製建置文件到 dist/community
 3. 部署到 Firebase Hosting
@@ -31,6 +33,7 @@ admin/
 ---
 
 ### 2. deploy-liff.sh
+
 部署 LINE LIFF 應用
 
 ```bash
@@ -38,6 +41,7 @@ admin/
 ```
 
 **執行步驟**：
+
 1. 構建 liff 應用
 2. 複製建置文件到 dist/liff
 3. 部署到 Firebase Hosting
@@ -47,6 +51,7 @@ admin/
 ---
 
 ### 3. deploy-all.sh
+
 完整部署（互動式）
 
 ```bash
@@ -54,6 +59,7 @@ admin/
 ```
 
 **特點**：
+
 - 互動式選擇要部署的項目
 - 支援部署：
   - Admin 管理後台
@@ -64,6 +70,7 @@ admin/
 - 構建失敗時詢問是否繼續部署成功的項目
 
 **執行流程**：
+
 ```
 是否部署 Admin 管理後台？ (y/n)
 是否部署 LIFF 應用？ (y/n)
@@ -197,7 +204,8 @@ dist/
 
 ### Q: 構建失敗怎麼辦？
 
-**A**: 
+**A**:
+
 1. 檢查 Node.js 版本（建議 18+）
 2. 刪除 node_modules 並重新安裝：
    ```bash
@@ -210,6 +218,7 @@ dist/
 ### Q: 部署後頁面空白或 404
 
 **A**:
+
 1. 確認 `firebase.json` 的 rewrites 設定正確
 2. 確認 `vite.config.ts` 的 base 路徑設定：
    - Admin: `base: '/'`
@@ -220,6 +229,7 @@ dist/
 ### Q: Cloud Functions 部署失敗
 
 **A**:
+
 1. 確認 Firebase 專案計費方案（Functions 需要 Blaze 計畫）
 2. 檢查 functions/package.json 的依賴版本
 3. 查看 Firebase Console 的 Functions 日誌
@@ -227,6 +237,7 @@ dist/
 ### Q: 部署後看不到最新變更
 
 **A**:
+
 1. 清除瀏覽器快取（Cmd+Shift+R 或 Ctrl+Shift+R）
 2. 確認部署成功：
    ```bash
@@ -350,6 +361,7 @@ firebase functions:log --only functionName
 ## 聯絡資訊
 
 如有部署問題，請聯絡：
+
 - 技術負責人：[聯絡方式]
 - Firebase 專案：safe-net-tw
 - 文檔：參考 `COMMUNITY_PORTAL_SETUP.md`

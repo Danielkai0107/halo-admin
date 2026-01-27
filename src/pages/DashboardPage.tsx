@@ -79,10 +79,10 @@ export const DashboardPage = () => {
   ];
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">系統總覽</h1>
-        <p className="text-gray-600 mt-2">Safe-Net 社區守護者管理系統</p>
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">系統總覽</h2>
+        <p className="text-sm text-gray-600 mt-1">Safe-Net 社區守護者管理系統</p>
       </div>
 
       {/* Stats Grid */}

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
-import { tenantService } from '../services/tenantService';
-import type { Tenant } from '../types';
+import { useEffect, useState } from "react";
+import { Plus, Search } from "lucide-react";
+import { tenantService } from "../services/tenantService";
+import type { Tenant } from "../types";
 
 export const TenantsPage = () => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -19,7 +19,7 @@ export const TenantsPage = () => {
       setTenants(response.data.data);
       setTotal(response.data.meta.total);
     } catch (error) {
-      console.error('Failed to load tenants:', error);
+      console.error("Failed to load tenants:", error);
     } finally {
       setLoading(false);
     }
@@ -34,7 +34,7 @@ export const TenantsPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">社區管理</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Line OA 管理</h1>
           <p className="text-gray-600 mt-1">管理所有社區資料</p>
         </div>
         <button className="btn-primary flex items-center space-x-2">
@@ -83,24 +83,29 @@ export const TenantsPage = () => {
             </thead>
             <tbody>
               {tenants.map((tenant) => (
-                <tr key={tenant.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <tr
+                  key={tenant.id}
+                  className="border-b border-gray-100 hover:bg-gray-50"
+                >
                   <td className="py-3 px-4 text-sm font-mono">{tenant.code}</td>
-                  <td className="py-3 px-4 text-sm font-medium">{tenant.name}</td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {tenant.contactPerson || '-'}
+                  <td className="py-3 px-4 text-sm font-medium">
+                    {tenant.name}
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600">
-                    {tenant.contactPhone || '-'}
+                    {tenant.contactPerson || "-"}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-600">
+                    {tenant.contactPhone || "-"}
                   </td>
                   <td className="py-3 px-4">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         tenant.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {tenant.isActive ? '啟用' : '停用'}
+                      {tenant.isActive ? "啟用" : "停用"}
                     </span>
                   </td>
                   <td className="py-3 px-4">

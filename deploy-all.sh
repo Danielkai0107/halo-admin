@@ -54,9 +54,9 @@ if [[ $DEPLOY_LIFF =~ ^[Yy]$ ]]; then
   else
     echo "✅ LIFF 構建成功"
     cd ..
-    rm -rf dist/liff
-    mkdir -p dist/liff
-    cp -r liff/dist/* dist/liff/
+    # LIFF 的 vite.config.ts 已設定 outDir: '../dist/liff'
+    # 所以編譯後直接輸出到 dist/liff/，不需要額外複製
+    echo "✅ LIFF 已編譯到 dist/liff/"
   fi
 fi
 

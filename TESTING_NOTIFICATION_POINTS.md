@@ -3,11 +3,13 @@
 ## 修正內容總結
 
 ### 1. 設備清單查詢修正
+
 - **問題**：tags 查詢格式錯誤，使用了 `tenant_${tenantId}` 但實際是直接存 `tenantId`
 - **修正**：改為 `where('tags', 'array-contains', tenantId)`
 - **影響**：現在可以正確顯示有該社區 tag 的設備
 
 ### 2. 通知點管理 UI 重新設計
+
 - **問題**：原本是用 Modal 新建通知點
 - **修正**：改為從現有 gateway 列表中勾選
 - **新功能**：
@@ -16,6 +18,7 @@
   - 直接在列表中編輯自訂通知訊息
 
 ### 3. LINE 通知觸發邏輯
+
 - **實作**：已在 Cloud Functions 中正確處理
 - **流程**：
   1. 長者綁定的設備經過 gateway
@@ -32,6 +35,7 @@
 **1. 確認 Firestore 有資料**
 
 在 Firestore Console 確認：
+
 - `tenants` 集合有測試社區
 - `gateways` 集合有測試接收器（tenantId 設為該社區 ID）
 - `devices` 集合有測試設備（tags 陣列包含社區 ID）
@@ -58,11 +62,13 @@ npm run dev
 1. 在 Admin 管理後台的「Beacon 管理」確認有設備，且 tags 包含社區 ID
 
    檢查設備的 tags 欄位：
+
    ```
    tags: ["YOUR_TENANT_ID", "批次2024"]
    ```
 
 2. 啟動 Community Portal：
+
    ```bash
    cd community-portal
    npm run dev
@@ -120,6 +126,7 @@ npm run dev
    - 勾選框取消
 
 **注意事項**：
+
 - 只有 ADMIN 角色可以勾選/取消勾選
 - MEMBER 角色只能查看
 
@@ -130,6 +137,7 @@ npm run dev
 **目標**：確認長者經過通知點時，正確發送 LINE 通知
 
 **前置條件**：
+
 - 長者已綁定設備
 - 設備有社區 tag
 - 社區有設定 LINE Channel Access Token
@@ -142,7 +150,7 @@ npm run dev
    - 通知點已設定（勾選某個 gateway）
 
 2. 確認社區設定：
-   - 在 Admin「社區管理」確認 lineChannelAccessToken 有值
+   - 在 Admin「Line OA 管理」確認 lineChannelAccessToken 有值
 
 3. 確認有 LINE 接收者：
    - 在 Firestore Console 查看 `appUsers` 集合
@@ -150,7 +158,7 @@ npm run dev
    - 或在 LIFF app 中確認有成員
 
 4. 模擬長者經過通知點：
-   
+
    **方法 A：使用 Beacon Test 頁面**
    - 在 Admin 的「Line 通知測試」頁面
    - 選擇長者綁定的設備（UUID/Major/Minor）
@@ -162,7 +170,7 @@ npm run dev
    - 等待資料上傳
 
 5. **預期結果**：
-   
+
    **在 LINE 中**：
    - 社區成員的 LINE 收到通知
    - 通知標題：「通知點提醒」
@@ -179,10 +187,11 @@ npm run dev
 6. **除錯步驟**（如果沒收到通知）：
 
    a. 檢查 Cloud Functions 日誌：
+
    ```bash
    firebase functions:log --only receiveBeaconData
    ```
-   
+
    b. 查看日誌中的訊息：
    - 是否有「Elder xxx passed through notification point」
    - 是否有「No approved members found」
@@ -286,6 +295,7 @@ npm run dev
 ### 檢查設備 tags
 
 在 Firestore Console 執行查詢：
+
 ```
 Collection: devices
 Filters: tags array-contains YOUR_TENANT_ID
@@ -323,6 +333,7 @@ Filters: status == APPROVED
 ### Q: 設備清單是空的
 
 **檢查**：
+
 1. Firestore Console → devices 集合
 2. 確認 tags 陣列包含正確的社區 ID（不是 "tenant_xxx" 格式）
 3. 確認 isActive = true
@@ -335,6 +346,7 @@ Filters: status == APPROVED
 ### Q: 通知點頁面是空的
 
 **檢查**：
+
 1. Firestore Console → gateways 集合
 2. 確認 tenantId 欄位有值且等於測試社區 ID
 3. 確認 isActive = true
@@ -423,6 +435,7 @@ firebase deploy --only functions,hosting
 ```
 
 或使用部署腳本：
+
 ```bash
 ./deploy-all.sh
 # 選擇：Community Portal (y), Functions (y)
@@ -448,17 +461,20 @@ firebase functions:log --only receiveBeaconData --lines 100
 ### 關鍵日誌訊息
 
 **成功觸發通知點**：
+
 ```
 Elder [名稱] passed through notification point: [通知點名稱]
 Sent notification point alert to member [LINE User ID]
 ```
 
 **沒有通知點**：
+
 ```
 No notification points for tenant [ID] at gateway [ID]
 ```
 
 **沒有 LINE 接收者**：
+
 ```
 No members with LINE accounts found for tenant [ID]
 ```
@@ -507,7 +523,7 @@ receiveBeaconData Function
 測試通過後：
 
 1. 為實際社區設定通知點
-2. 培訓社區管理員使用
+2. 培訓Line OA 管理員使用
 3. 收集使用回饋
 4. 根據需求調整功能
 
@@ -516,6 +532,7 @@ receiveBeaconData Function
 ## 需要協助？
 
 如遇到問題：
+
 1. 查看瀏覽器 Console 錯誤
 2. 查看 Cloud Functions 日誌
 3. 檢查 Firestore 資料結構

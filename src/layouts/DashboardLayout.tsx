@@ -1,149 +1,151 @@
-import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import { 
-  Home, Users, Smartphone, Radio, Bell, 
-  LayoutDashboard, LogOut, Building2, UserCog, TestTube, Tag,
-  ChevronLeft, ChevronRight, MapPin, Shield
-} from 'lucide-react';
-import { useState } from 'react';
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
+import {
+  Home,
+  Users,
+  Smartphone,
+  Radio,
+  LogOut,
+  Building2,
+  UserCog,
+  Tag,
+  MapPin,
+  Shield,
+  Menu,
+} from "lucide-react";
+import { useState } from "react";
+import haloLogo from "../assets/halo_logo.png";
 
 export const DashboardLayout = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
-  const isActive = (path: string) => {
-    return location.pathname.startsWith(path);
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  const menuItems = [
-    { path: '/dashboard', icon: Home, label: '總覽' },
-    { type: 'divider' as const },
-    { path: '/tenants', icon: Building2, label: '社區管理' },
-    { path: '/elders', icon: Users, label: '長者管理' },
-    { path: '/map-app-users', icon: MapPin, label: '地圖 App 用戶' },
-    { type: 'divider' as const },
-    { path: '/uuids', icon: Tag, label: 'UUID 管理' },
-    { path: '/devices', icon: Smartphone, label: 'Beacon 管理' },
-    { path: '/gateways', icon: Radio, label: 'GateWay 管理' },
-    { type: 'divider' as const },
-    { path: '/alerts', icon: Bell, label: '警報管理' },
-    { type: 'divider' as const },
-    { path: '/beacon-test', icon: TestTube, label: 'Line 通知測試' },
-    { path: '/users', icon: UserCog, label: '系統人員管理' },
-    { path: '/saas-users', icon: Shield, label: 'SaaS 用戶管理' },
+  const navigationItems = [
+    { path: "/dashboard", label: "總覽", icon: Home },
+    { type: "divider" as const },
+    { path: "/tenants", label: "Line OA 管理", icon: Building2 },
+    { path: "/elders", label: "長者管理", icon: Users },
+    { path: "/map-app-users", label: "Line 用戶管理", icon: MapPin },
+    { type: "divider" as const },
+    { path: "/uuids", label: "UUID 管理", icon: Tag },
+    { path: "/devices", label: "Beacon 管理", icon: Smartphone },
+    { path: "/gateways", label: "GateWay 管理", icon: Radio },
+    { type: "divider" as const },
+    { path: "/users", label: "系統人員管理", icon: UserCog },
+    { path: "/saas-users", label: "SaaS 用戶管理", icon: Shield },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside 
-        className={`fixed inset-y-0 left-0 bg-white border-r border-gray-200 transition-all duration-300 ${
-          isCollapsed ? 'w-20' : 'w-64'
-        }`}
-      >
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="p-6 border-b border-gray-200">
-            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
-              <LayoutDashboard className="w-8 h-8 text-primary-600 flex-shrink-0" />
-              {!isCollapsed && (
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">Safe-Net</h1>
-                  <p className="text-xs text-gray-500">社區守護者</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Toggle Button */}
-          <div className="px-4 py-2 border-b border-gray-200">
+      {/* 頂部欄 */}
+      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-10">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* 左側：選單按鈕 */}
+          <div className="flex items-center">
             <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="w-full flex items-center justify-center p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              title={isCollapsed ? '展開側邊欄' : '收起側邊欄'}
+              onClick={toggleSidebar}
+              className="btn btn--ghost btn--icon"
+              title={sidebarCollapsed ? "展開側邊欄" : "收起側邊欄"}
             >
-              {isCollapsed ? (
-                <ChevronRight className="w-5 h-5" />
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <ChevronLeft className="w-5 h-5" />
-                  <span className="text-sm font-medium">收起</span>
-                </div>
-              )}
+              <Menu
+                className="btn__icon"
+                style={{ width: "1.5rem", height: "1.5rem" }}
+              />
             </button>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {menuItems.map((item, index) => {
-              if (item.type === 'divider') {
+          {/* 中間：Logo */}
+          <div className="absolute left-1/2 transform -translate-x-1/2">
+            <img src={haloLogo} alt="Halo Logo" className="admin-logo" />
+          </div>
+
+          {/* 右側：保留空間平衡布局 */}
+          <div className="w-10"></div>
+        </div>
+      </header>
+
+      {/* 側邊欄 */}
+      <aside
+        className={`sidebar ${sidebarCollapsed ? "sidebar--collapsed" : ""}`}
+      >
+        <div className="flex flex-col h-full">
+          <nav className="sidebar__nav flex-1">
+            {navigationItems.map((item, index) => {
+              if (item.type === "divider") {
                 return (
-                  <div 
-                    key={`divider-${index}`} 
-                    className="my-2 border-t border-gray-200"
-                  />
+                  <div key={`divider-${index}`} className="sidebar__divider" />
                 );
               }
-              
+
+              const Icon = item.icon;
               return (
-                <Link
+                <NavLink
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                    isCollapsed ? 'justify-center' : 'space-x-3'
-                  } ${
-                    isActive(item.path)
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                  title={isCollapsed ? item.label : ''}
+                  className={({ isActive }) =>
+                    `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
+                  }
+                  title={sidebarCollapsed ? item.label : ""}
                 >
-                  <item.icon className="w-5 h-5 flex-shrink-0" />
-                  {!isCollapsed && (
-                    <span className="font-medium">{item.label}</span>
-                  )}
-                </Link>
+                  <Icon className="sidebar__icon" />
+                  {!sidebarCollapsed && <span>{item.label}</span>}
+                </NavLink>
               );
             })}
           </nav>
 
-          {/* User Info */}
-          <div className="p-4 border-t border-gray-200">
-            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-              {!isCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {user?.name}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                </div>
-              )}
-              <button
-                onClick={handleLogout}
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                title="登出"
+          {/* 用戶資訊 */}
+          {user && (
+            <div className="border-t border-gray-200 p-4">
+              <div
+                className={`flex items-center ${sidebarCollapsed ? "justify-center" : "space-x-3"}`}
               >
-                <LogOut className="w-5 h-5" />
-              </button>
+                {!sidebarCollapsed && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {user.name}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {user.email}
+                    </p>
+                    <button
+                      onClick={handleLogout}
+                      className="mt-2 text-xs text-primary hover:text-primary-dark transition-colors"
+                    >
+                      登出
+                    </button>
+                  </div>
+                )}
+                {sidebarCollapsed && (
+                  <button
+                    onClick={handleLogout}
+                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="登出"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main 
-        className={`transition-all duration-300 ${
-          isCollapsed ? 'ml-20' : 'ml-64'
-        }`}
+      {/* 主內容區 */}
+      <main
+        className={`pt-14 transition-all duration-200 ${sidebarCollapsed ? "pl-20" : "pl-64"}`}
       >
-        <div className="p-8">
+        <div className="p-6">
           <Outlet />
         </div>
       </main>

@@ -18,6 +18,7 @@
 ### 步驟 2: 查詢可用的社區 ID
 
 在 [Firestore Console](https://console.firebase.google.com/project/safe-net-tw/firestore) 中：
+
 1. 開啟 `tenants` 集合
 2. 記下您要使用的社區文件 ID（例如：`tenant_001` 或自動生成的 ID）
 
@@ -35,12 +36,13 @@ node create-saas-user.cjs <email> <password> <name> <tenantId> [phone]
 node create-saas-user.cjs admin@test.com test123456 "測試管理員" YOUR_TENANT_ID
 
 # 包含電話號碼
-node create-saas-user.cjs admin@dalove.com admin123 "大愛社區管理員" dalove_001 0912345678
+node create-saas-user.cjs admin@dalove.com admin123 "大愛Line OA 管理員" dalove_001 0912345678
 ```
 
 ### 步驟 4: 測試登入
 
 1. 啟動開發伺服器：
+
    ```bash
    cd community-portal
    npm run dev
@@ -72,18 +74,18 @@ node create-saas-user.cjs admin@dalove.com admin123 "大愛社區管理員" dalo
 4. **文件 ID**：輸入步驟 1 的「使用者 UID」（必須相同！）
 5. 新增以下欄位：
 
-| 欄位 | 類型 | 值 |
-|------|------|-----|
-| firebaseUid | string | （步驟 1 的 UID） |
-| email | string | admin@test.com |
-| name | string | 測試管理員 |
-| phone | string | 0912345678（選填） |
-| avatar | string | null（選填） |
-| tenantId | string | YOUR_TENANT_ID |
-| role | string | ADMIN |
-| isActive | boolean | true |
-| createdAt | timestamp | （點擊時鐘圖示選擇當前時間） |
-| updatedAt | timestamp | （點擊時鐘圖示選擇當前時間） |
+| 欄位        | 類型      | 值                           |
+| ----------- | --------- | ---------------------------- |
+| firebaseUid | string    | （步驟 1 的 UID）            |
+| email       | string    | admin@test.com               |
+| name        | string    | 測試管理員                   |
+| phone       | string    | 0912345678（選填）           |
+| avatar      | string    | null（選填）                 |
+| tenantId    | string    | YOUR_TENANT_ID               |
+| role        | string    | ADMIN                        |
+| isActive    | boolean   | true                         |
+| createdAt   | timestamp | （點擊時鐘圖示選擇當前時間） |
+| updatedAt   | timestamp | （點擊時鐘圖示選擇當前時間） |
 
 6. 點擊「儲存」
 
@@ -96,18 +98,18 @@ node create-saas-user.cjs admin@dalove.com admin123 "大愛社區管理員" dalo
 1. 在 Firestore Console 中開啟 `tenants` 集合
 2. 新增文件：
 
-| 欄位 | 類型 | 值 |
-|------|------|-----|
-| code | string | COMMUNITY001 |
-| name | string | 測試社區 |
-| address | string | 測試地址 |
-| contactPerson | string | 聯絡人 |
-| contactPhone | string | 0912345678 |
-| lineChannelAccessToken | string | （LINE Channel Access Token，選填） |
-| lineChannelSecret | string | （LINE Channel Secret，選填） |
-| isActive | boolean | true |
-| createdAt | timestamp | （當前時間） |
-| updatedAt | timestamp | （當前時間） |
+| 欄位                   | 類型      | 值                                  |
+| ---------------------- | --------- | ----------------------------------- |
+| code                   | string    | COMMUNITY001                        |
+| name                   | string    | 測試社區                            |
+| address                | string    | 測試地址                            |
+| contactPerson          | string    | 聯絡人                              |
+| contactPhone           | string    | 0912345678                          |
+| lineChannelAccessToken | string    | （LINE Channel Access Token，選填） |
+| lineChannelSecret      | string    | （LINE Channel Secret，選填）       |
+| isActive               | boolean   | true                                |
+| createdAt              | timestamp | （當前時間）                        |
+| updatedAt              | timestamp | （當前時間）                        |
 
 ---
 
@@ -116,12 +118,15 @@ node create-saas-user.cjs admin@dalove.com admin123 "大愛社區管理員" dalo
 ### 不同角色的測試帳號
 
 #### 管理員帳號
+
 ```bash
-node create-saas-user.cjs admin@test.com admin123 "社區管理員" YOUR_TENANT_ID
+node create-saas-user.cjs admin@test.com admin123 "Line OA 管理員" YOUR_TENANT_ID
 ```
 
 #### 一般成員帳號
+
 建立後手動修改 `role` 為 `MEMBER`：
+
 ```bash
 node create-saas-user.cjs member@test.com member123 "社區成員" YOUR_TENANT_ID
 ```
@@ -161,12 +166,12 @@ node create-saas-user.cjs admin-b@test.com test123 "社區B管理員" tenant_b
 
 **常見錯誤**：
 
-| 錯誤訊息 | 原因 | 解決方法 |
-|---------|------|----------|
+| 錯誤訊息       | 原因                          | 解決方法                   |
+| -------------- | ----------------------------- | -------------------------- |
 | 找不到用戶記錄 | saas_users 不存在或 ID 不匹配 | 確認文件 ID = Firebase UID |
-| 找不到社區資料 | tenantId 指向不存在的社區 | 建立對應的 tenant 記錄 |
-| 帳號已被停用 | isActive = false | 在 Firestore 改為 true |
-| 帳號或密碼錯誤 | 密碼錯誤或用戶不存在 | 在 Firebase Auth 重設密碼 |
+| 找不到社區資料 | tenantId 指向不存在的社區     | 建立對應的 tenant 記錄     |
+| 帳號已被停用   | isActive = false              | 在 Firestore 改為 true     |
+| 帳號或密碼錯誤 | 密碼錯誤或用戶不存在          | 在 Firebase Auth 重設密碼  |
 
 ---
 
@@ -223,6 +228,7 @@ npm run dev
 ```
 
 使用：
+
 ```bash
 chmod +x quick-test.sh
 ./quick-test.sh
@@ -242,7 +248,8 @@ chmod +x quick-test.sh
 
 **錯誤**: `社區 xxx 不存在`
 
-**解決**: 
+**解決**:
+
 1. 前往 Firestore Console 查看 tenants 集合
 2. 確認社區 ID 正確
 3. 或建立新的社區記錄
@@ -262,6 +269,7 @@ chmod +x quick-test.sh
 **原因**: useAuth hook 驗證失敗
 
 **檢查**:
+
 1. 瀏覽器 Console 的錯誤訊息
 2. saas_users 文件 ID 是否等於 Firebase UID
 3. tenantId 是否有效

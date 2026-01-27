@@ -6,7 +6,7 @@ echo "========================================="
 
 # 構建 LIFF 應用
 echo ""
-echo "步驟 1/3: 構建 LIFF 應用..."
+echo "步驟 1/2: 構建 LIFF 應用..."
 cd liff
 npm run build
 if [ $? -ne 0 ]; then
@@ -15,16 +15,9 @@ if [ $? -ne 0 ]; then
 fi
 cd ..
 
-# 複製到部署目錄
+# 部署（Vite 已經直接輸出到 dist/liff）
 echo ""
-echo "步驟 2/3: 複製構建文件..."
-rm -rf dist/liff
-mkdir -p dist/liff
-cp -r liff/dist/* dist/liff/
-
-# 部署
-echo ""
-echo "步驟 3/3: 部署到 Firebase..."
+echo "步驟 2/2: 部署到 Firebase..."
 firebase deploy --only hosting
 
 if [ $? -eq 0 ]; then

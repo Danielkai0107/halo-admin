@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, UserX, UserCheck } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { userService } from '../services/userService';
-import { tenantService } from '../services/tenantService';
-import { Modal } from '../components/Modal';
-import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useEffect, useState } from "react";
+import { Plus, Edit, Trash2, UserX, UserCheck } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { userService } from "../services/userService";
+import { tenantService } from "../services/tenantService";
+import { Modal } from "../components/Modal";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 interface User {
   id: string;
@@ -28,14 +28,20 @@ export const UsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [filterTenantId, setFilterTenantId] = useState<string>('');
-  
+  const [filterTenantId, setFilterTenantId] = useState<string>("");
+
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
-  const watchRole = watch('role');
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm();
+  const watchRole = watch("role");
 
   useEffect(() => {
     loadTenants();
@@ -43,16 +49,13 @@ export const UsersPage = () => {
 
   useEffect(() => {
     setLoading(true);
-    
+
     // 訂閱用戶列表（即時監聽）
-    const unsubscribe = userService.subscribe(
-      (data) => {
-        setUsers(data as User[]);
-        setTotal(data.length);
-        setLoading(false);
-      },
-      filterTenantId || undefined
-    );
+    const unsubscribe = userService.subscribe((data) => {
+      setUsers(data as User[]);
+      setTotal(data.length);
+      setLoading(false);
+    }, filterTenantId || undefined);
 
     // 清理訂閱
     return () => unsubscribe();
@@ -67,7 +70,7 @@ export const UsersPage = () => {
       const response: any = await tenantService.getAll(1, 100);
       setTenants(response.data.data || []);
     } catch (error) {
-      console.error('Failed to load tenants:', error);
+      console.error("Failed to load tenants:", error);
     }
   };
 
@@ -81,20 +84,20 @@ export const UsersPage = () => {
     setEditingUser(user);
     reset({
       ...user,
-      password: '', // 不預填密碼
+      password: "", // 不預填密碼
     });
     setShowModal(true);
   };
 
   const handleDelete = async () => {
     if (!deletingUser) return;
-    
+
     try {
       await userService.delete(deletingUser.id);
-      alert('刪除成功');
+      alert("刪除成功");
       loadUsers();
     } catch (error: any) {
-      alert(error.response?.data?.message || '刪除失敗');
+      alert(error.response?.data?.message || "刪除失敗");
     }
     setDeletingUser(null);
   };
@@ -102,10 +105,10 @@ export const UsersPage = () => {
   const handleToggleActive = async (user: User) => {
     try {
       await userService.toggleActive(user.id);
-      alert(user.isActive ? '已停用用戶' : '已啟用用戶');
+      alert(user.isActive ? "已停用用戶" : "已啟用用戶");
       loadUsers();
     } catch (error: any) {
-      alert(error.response?.data?.message || '操作失敗');
+      alert(error.response?.data?.message || "操作失敗");
     }
   };
 
@@ -117,37 +120,39 @@ export const UsersPage = () => {
       }
 
       // 處理 tenantId
-      if (data.role === 'SUPER_ADMIN') {
+      if (data.role === "SUPER_ADMIN") {
         data.tenantId = null;
       }
 
       if (editingUser) {
         await userService.update(editingUser.id, data);
-        alert('更新成功');
+        alert("更新成功");
       } else {
         await userService.create(data);
-        alert('新增成功');
+        alert("新增成功");
       }
       setShowModal(false);
       loadUsers();
     } catch (error: any) {
-      alert(error.response?.data?.message || '操作失敗');
+      alert(error.response?.data?.message || "操作失敗");
     }
   };
 
   const getRoleBadge = (role: string) => {
     const styles: any = {
-      SUPER_ADMIN: 'bg-purple-100 text-purple-800',
-      TENANT_ADMIN: 'bg-blue-100 text-blue-800',
-      STAFF: 'bg-gray-100 text-gray-800',
+      SUPER_ADMIN: "bg-purple-100 text-purple-800",
+      TENANT_ADMIN: "bg-blue-100 text-blue-800",
+      STAFF: "bg-gray-100 text-gray-800",
     };
     const labels: any = {
-      SUPER_ADMIN: '超級管理員',
-      TENANT_ADMIN: '社區管理員',
-      STAFF: '一般人員',
+      SUPER_ADMIN: "超級管理員",
+      TENANT_ADMIN: "Line OA 管理員",
+      STAFF: "一般人員",
     };
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[role] || 'bg-gray-100'}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium ${styles[role] || "bg-gray-100"}`}
+      >
         {labels[role] || role}
       </span>
     );
@@ -160,21 +165,24 @@ export const UsersPage = () => {
   const totalPages = Math.ceil(total / 10);
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">系統人員管理</h1>
-          <p className="text-gray-600 mt-1">管理後台使用者帳號</p>
+          <h2 className="text-2xl font-bold text-gray-900">系統人員管理</h2>
+          <p className="text-sm text-gray-600 mt-1">管理後台使用者帳號</p>
         </div>
-        <button onClick={handleCreate} className="btn-primary flex items-center space-x-2">
+        <button
+          onClick={handleCreate}
+          className="btn-primary flex items-center space-x-2"
+        >
           <Plus className="w-5 h-5" />
           <span>新增人員</span>
         </button>
       </div>
 
       {/* Filter */}
-      <div className="mb-6 flex space-x-4">
+      <div className="flex space-x-4">
         <select
           value={filterTenantId}
           onChange={(e) => {
@@ -259,23 +267,29 @@ export const UsersPage = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {user.lastLoginAt
-                    ? new Date(user.lastLoginAt).toLocaleString('zh-TW')
-                    : '從未登入'}
+                    ? new Date(user.lastLoginAt).toLocaleString("zh-TW")
+                    : "從未登入"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end space-x-2">
                     <button
                       onClick={() => handleToggleActive(user)}
                       className={`${
-                        user.isActive ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'
+                        user.isActive
+                          ? "text-orange-600 hover:text-orange-900"
+                          : "text-green-600 hover:text-green-900"
                       }`}
-                      title={user.isActive ? '停用' : '啟用'}
+                      title={user.isActive ? "停用" : "啟用"}
                     >
-                      {user.isActive ? <UserX className="w-5 h-5" /> : <UserCheck className="w-5 h-5" />}
+                      {user.isActive ? (
+                        <UserX className="w-5 h-5" />
+                      ) : (
+                        <UserCheck className="w-5 h-5" />
+                      )}
                     </button>
                     <button
                       onClick={() => handleEdit(user)}
-                      className="text-indigo-600 hover:text-indigo-900"
+                      className="text-primary-600 hover:text-primary-700"
                       title="編輯"
                     >
                       <Edit className="w-5 h-5" />
@@ -298,7 +312,8 @@ export const UsersPage = () => {
       {/* Pagination */}
       <div className="flex items-center justify-between mt-6">
         <div className="text-sm text-gray-700">
-          顯示 {(page - 1) * 10 + 1} 到 {Math.min(page * 10, total)} 筆，共 {total} 筆
+          顯示 {(page - 1) * 10 + 1} 到 {Math.min(page * 10, total)} 筆，共{" "}
+          {total} 筆
         </div>
         <div className="flex space-x-2">
           <button
@@ -325,29 +340,31 @@ export const UsersPage = () => {
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editingUser ? '編輯人員' : '新增人員'}
+        title={editingUser ? "編輯人員" : "新增人員"}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="label">姓名 *</label>
             <input
-              {...register('name', { required: '請輸入姓名' })}
+              {...register("name", { required: "請輸入姓名" })}
               className="input"
               placeholder="請輸入姓名"
             />
             {errors.name && (
-              <p className="text-red-500 text-sm mt-1">{errors.name.message as string}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.name.message as string}
+              </p>
             )}
           </div>
 
           <div>
             <label className="label">Email *</label>
             <input
-              {...register('email', {
-                required: '請輸入 Email',
+              {...register("email", {
+                required: "請輸入 Email",
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: '請輸入有效的 Email',
+                  message: "請輸入有效的 Email",
                 },
               })}
               type="email"
@@ -355,51 +372,59 @@ export const UsersPage = () => {
               placeholder="user@example.com"
             />
             {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email.message as string}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.email.message as string}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="label">密碼 {editingUser && '(留空則不更改)'}</label>
+            <label className="label">
+              密碼 {editingUser && "(留空則不更改)"}
+            </label>
             <input
-              {...register('password', {
-                required: !editingUser && '請輸入密碼',
+              {...register("password", {
+                required: !editingUser && "請輸入密碼",
                 minLength: {
                   value: 6,
-                  message: '密碼至少需要 6 個字元',
+                  message: "密碼至少需要 6 個字元",
                 },
               })}
               type="password"
               className="input"
-              placeholder={editingUser ? '留空則不更改' : '至少 6 個字元'}
+              placeholder={editingUser ? "留空則不更改" : "至少 6 個字元"}
             />
             {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password.message as string}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.password.message as string}
+              </p>
             )}
           </div>
 
           <div>
             <label className="label">角色 *</label>
             <select
-              {...register('role', { required: '請選擇角色' })}
+              {...register("role", { required: "請選擇角色" })}
               className="input"
             >
               <option value="">請選擇角色</option>
               <option value="SUPER_ADMIN">超級管理員</option>
-              <option value="TENANT_ADMIN">社區管理員</option>
+              <option value="TENANT_ADMIN">Line OA 管理員</option>
               <option value="STAFF">一般人員</option>
             </select>
             {errors.role && (
-              <p className="text-red-500 text-sm mt-1">{errors.role.message as string}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.role.message as string}
+              </p>
             )}
           </div>
 
-          {watchRole && watchRole !== 'SUPER_ADMIN' && (
+          {watchRole && watchRole !== "SUPER_ADMIN" && (
             <div>
               <label className="label">所屬社區 *</label>
               <select
-                {...register('tenantId', {
-                  required: watchRole !== 'SUPER_ADMIN' && '請選擇社區',
+                {...register("tenantId", {
+                  required: watchRole !== "SUPER_ADMIN" && "請選擇社區",
                 })}
                 className="input"
               >
@@ -411,7 +436,9 @@ export const UsersPage = () => {
                 ))}
               </select>
               {errors.tenantId && (
-                <p className="text-red-500 text-sm mt-1">{errors.tenantId.message as string}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.tenantId.message as string}
+                </p>
               )}
             </div>
           )}
@@ -419,7 +446,7 @@ export const UsersPage = () => {
           <div>
             <label className="label">電話</label>
             <input
-              {...register('phone')}
+              {...register("phone")}
               type="tel"
               className="input"
               placeholder="0912-345-678"
@@ -435,7 +462,7 @@ export const UsersPage = () => {
               取消
             </button>
             <button type="submit" className="btn-primary">
-              {editingUser ? '更新' : '新增'}
+              {editingUser ? "更新" : "新增"}
             </button>
           </div>
         </form>

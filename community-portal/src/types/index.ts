@@ -1,4 +1,4 @@
-// SaaS User (社區管理員)
+// SaaS User (Line OA 管理員)
 export interface SaasUser {
   id: string;
   firebaseUid: string;
@@ -7,7 +7,7 @@ export interface SaasUser {
   phone?: string;
   avatar?: string;
   tenantId: string;
-  role: 'ADMIN' | 'MEMBER';
+  role: "ADMIN" | "MEMBER";
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -36,7 +36,7 @@ export interface Elder {
   id: string;
   tenantId: string;
   name: string;
-  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  gender?: "MALE" | "FEMALE" | "OTHER";
   birthDate?: string;
   age?: number;
   phone?: string;
@@ -83,7 +83,7 @@ export interface Device {
   boundAt: string | null;
   mapUserNickname?: string | null;
   mapUserAge?: number | null;
-  mapUserGender?: 'MALE' | 'FEMALE' | 'OTHER' | null;
+  mapUserGender?: "MALE" | "FEMALE" | "OTHER" | null;
   tags: string[];
   macAddress?: string;
   batteryLevel?: number;
@@ -129,7 +129,11 @@ export interface Gateway {
   tenant?: Tenant;
 }
 
-export type GatewayType = "SCHOOL_ZONE" | "SAFE_ZONE" | "OBSERVE_ZONE" | "INACTIVE";
+export type GatewayType =
+  | "SCHOOL_ZONE"
+  | "SAFE_ZONE"
+  | "OBSERVE_ZONE"
+  | "INACTIVE";
 
 export const GatewayType = {
   SCHOOL_ZONE: "SCHOOL_ZONE",
@@ -165,7 +169,7 @@ export interface NotificationLog {
   longitude?: number;
   rssi?: number;
   triggeredNotification: boolean;
-  notificationType: 'LINE' | 'FCM' | null;
+  notificationType: "LINE" | "FCM" | null;
   notificationDetails?: {
     sentAt: Date;
     recipientCount: number;
@@ -185,7 +189,7 @@ export interface Activity {
   longitude?: number;
   bindingType?: DeviceBindingType;
   triggeredNotification?: boolean;
-  notificationType?: 'LINE' | 'FCM' | null;
+  notificationType?: "LINE" | "FCM" | null;
   notificationDetails?: any;
   gateway?: Gateway;
 }

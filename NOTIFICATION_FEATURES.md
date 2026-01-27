@@ -5,9 +5,11 @@
 ### 1. 首次活動通知文案優化 ✅
 
 **修改前**：
+
 - 所有位置更新都顯示「位置更新」
 
 **修改後**：
+
 - **今日首次偵測**：顯示「今日首次活動」
 - **後續更新**：顯示「位置更新」
 - **邊界警報**：顯示「邊界警報」（不變）
@@ -15,8 +17,9 @@
 ### 2. 移除 Emoji ✅
 
 所有 Flex Message 中的 emoji 已移除：
+
 - ~~⚠️ 邊界警報~~ → **邊界警報**
-- ~~📍 位置更新~~ → **位置更新** 或 **今日首次活動**
+- ~~位置更新~~ → **位置更新** 或 **今日首次活動**
 
 ### 3. 位置更新通知開關 ✅
 
@@ -32,6 +35,7 @@ ENABLE_LOCATION_UPDATE_NOTIFICATION=false  # 停用位置更新通知（預設�
 ```
 
 **重要**：
+
 - ✅ **邊界警報**永遠發送，不受開關影響
 - ✅ **今日首次活動**永遠發送，不受開關影響（重要通知）
 - ✅ 只控制「**位置更新**」（5分鐘冷卻後的後續通知）
@@ -42,7 +46,7 @@ ENABLE_LOCATION_UPDATE_NOTIFICATION=false  # 停用位置更新通知（預設�
 # 方法 1：使用 Firebase CLI
 firebase functions:config:set notification.location_update=true
 
-# 方法 2：在 Firebase Console 
+# 方法 2：在 Firebase Console
 # Functions → 選擇 receiveBeaconData → 編輯 → 環境變數
 # 添加：ENABLE_LOCATION_UPDATE_NOTIFICATION=true
 ```
@@ -53,11 +57,11 @@ firebase functions:config:set notification.location_update=true
 
 系統會在以下時段自動檢查並通知：
 
-| 時段 | 檢查時間 | 檢查範圍 | 通知對象 |
-|------|---------|---------|---------|
-| 早上 | 12:00 | 00:00-12:00 | 所有管理員 |
-| 下午 | 18:00 | 12:00-18:00 | 所有管理員 |
-| 晚上 | 00:00 | 18:00-00:00 | 所有管理員 |
+| 時段 | 檢查時間 | 檢查範圍    | 通知對象   |
+| ---- | -------- | ----------- | ---------- |
+| 早上 | 12:00    | 00:00-12:00 | 所有管理員 |
+| 下午 | 18:00    | 12:00-18:00 | 所有管理員 |
+| 晚上 | 00:00    | 18:00-00:00 | 所有管理員 |
 
 #### 檢查邏輯
 
@@ -82,11 +86,13 @@ firebase functions:config:set notification.location_update=true
 #### Cloud Scheduler 設定
 
 系統已自動部署排程任務：
+
 - **Function 名稱**：`checkInactiveElders`
 - **執行頻率**：每天 00:00、12:00、18:00
 - **時區**：Asia/Taipei
 
 可在 Firebase Console 查看：
+
 ```
 Cloud Scheduler → checkInactiveElders
 ```
@@ -131,6 +137,7 @@ Cloud Scheduler → checkInactiveElders
 ## 部署狀態
 
 ✅ **已部署的 Functions**：
+
 - `receiveBeaconData` - Beacon 數據處理（含首次活動判斷）
 - `checkInactiveElders` - 定時檢查無活動長輩（新增）
 - `assignAlert` - 警報分配
@@ -202,10 +209,8 @@ firebase deploy --only functions:receiveBeaconData
 
 1. **自訂檢查時段**
    - 允許每個社區設定自己的檢查時間
-   
 2. **通知偏好設定**
    - 讓管理員選擇想收到哪些通知
-   
 3. **警報升級機制**
    - 如果長輩連續多個時段無活動，提升警報等級
 

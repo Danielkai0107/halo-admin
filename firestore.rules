@@ -95,7 +95,7 @@ service cloud.firestore {
       allow write: if isSuperAdmin() || isTenantAdmin();
     }
     
-    // App Users 集合（地圖 App 用戶）
+    // App Users 集合（Line 用戶管理）
     match /app_users/{appUserId} {
       allow read: if isAuthenticated();
       allow write: if isSuperAdmin() || isTenantAdmin();
@@ -142,7 +142,7 @@ service cloud.firestore {
       return isSaasUser() && getSaasUserTenantId() == resourceTenantId;
     }
     
-    // SaaS Users 集合（社區管理員用戶）
+    // SaaS Users 集合（Line OA 管理員用戶）
     match /saas_users/{userId} {
       // 只能讀取自己的記錄（文件 ID = Firebase UID）
       allow read: if isAuthenticated() && request.auth.uid == userId;

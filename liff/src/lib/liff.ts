@@ -10,14 +10,37 @@ export interface LiffProfile {
 // 初始化 LIFF
 export const initLiff = async (liffId: string): Promise<void> => {
   try {
+    console.log('Initializing LIFF with ID:', liffId);
+    console.log('Current URL:', window.location.href);
+    
     await liff.init({ liffId });
+    console.log('LIFF initialized successfully');
+    console.log('Is logged in:', liff.isLoggedIn());
+    console.log('Is in client:', liff.isInClient());
+    console.log('OS:', liff.getOS());
+    console.log('Language:', liff.getLanguage());
+    console.log('LIFF Version:', liff.getVersion());
     
     // 如果未登入，進行登入
     if (!liff.isLoggedIn()) {
-      liff.login();
+      console.log('User not logged in, redirecting to LINE login...');
+      console.log('Login redirect URL will be:', window.location.href);
+      
+      // 設定登入後的返回 URL
+      liff.login({
+        redirectUri: window.location.href
+      });
+      
+      // 注意：login() 會導致頁面重定向，後面的代碼不會執行
+      return;
     }
-  } catch (error) {
+    
+    console.log('User is already logged in');
+  } catch (error: any) {
     console.error('LIFF initialization failed:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     throw error;
   }
 };

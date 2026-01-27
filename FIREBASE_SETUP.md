@@ -34,67 +34,67 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
-    
+
     function isSuperAdmin() {
       return isAuthenticated() && getUserData().role == 'SUPER_ADMIN';
     }
-    
+
     function isTenantAdmin() {
       return isAuthenticated() && getUserData().role == 'TENANT_ADMIN';
     }
-    
+
     function belongsToTenant(tenantId) {
       return isAuthenticated() && getUserData().tenantId == tenantId;
     }
-    
+
     // Users 集合
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow write: if isSuperAdmin();
     }
-    
+
     // Tenants 集合
     match /tenants/{tenantId} {
       allow read: if isAuthenticated();
       allow write: if isSuperAdmin();
-      
+
       // 子集合：成員
       match /members/{memberId} {
         allow read: if isAuthenticated();
         allow write: if isSuperAdmin() || (isTenantAdmin() && belongsToTenant(tenantId));
       }
     }
-    
+
     // Elders 集合
     match /elders/{elderId} {
       allow read: if isAuthenticated();
       allow create: if isSuperAdmin() || isTenantAdmin();
       allow update, delete: if isSuperAdmin() || (isTenantAdmin() && belongsToTenant(resource.data.tenantId));
     }
-    
+
     // Devices 集合
     match /devices/{deviceId} {
       allow read: if isAuthenticated();
       allow write: if isSuperAdmin() || isTenantAdmin();
     }
-    
+
     // Gateways 集合
     match /gateways/{gatewayId} {
       allow read: if isAuthenticated();
       allow create: if isSuperAdmin() || isTenantAdmin();
       allow update, delete: if isSuperAdmin() || (isTenantAdmin() && belongsToTenant(resource.data.tenantId));
     }
-    
+
     // Alerts 集合
     match /alerts/{alertId} {
       allow read: if isAuthenticated();
       allow write: if isSuperAdmin() || isTenantAdmin();
     }
-    
+
     // AppUsers 集合
     match /appUsers/{appUserId} {
       allow read: if isAuthenticated();
@@ -124,11 +124,13 @@ service cloud.firestore {
 3. 創建以下測試帳號：
 
 **超級管理員帳號：**
+
 - Email: `admin@safenet.com`
 - Password: `admin123456`
 - User UID: 記下自動生成的 UID（例如：`abc123def456`）
 
-**社區管理員帳號：**
+**Line OA 管理員帳號：**
+
 - Email: `admin@dalove.com`
 - Password: `admin123`
 - User UID: 記下自動生成的 UID（例如：`xyz789uvw012`）
@@ -141,6 +143,7 @@ service cloud.firestore {
 4. 創建第一個文檔：
 
 **超級管理員文檔：**
+
 - 文檔 ID：使用步驟 1 記下的超級管理員 UID（例如：`abc123def456`）
 - 欄位：
   ```
@@ -154,14 +157,15 @@ service cloud.firestore {
   updatedAt: (同上)
   ```
 
-5. 新增第二個文檔（社區管理員）：
+5. 新增第二個文檔（Line OA 管理員）：
 
-**社區管理員文檔：**
-- 文檔 ID：使用步驟 1 記下的社區管理員 UID（例如：`xyz789uvw012`）
+**Line OA 管理員文檔：**
+
+- 文檔 ID：使用步驟 1 記下的Line OA 管理員 UID（例如：`xyz789uvw012`）
 - 欄位：
   ```
   email: "admin@dalove.com"
-  name: "大愛社區管理員"
+  name: "大愛Line OA 管理員"
   role: "TENANT_ADMIN"
   tenantId: "tenant_dalove_001"  // 稍後創建社區時使用此 ID
   phone: "0922-123-456"
@@ -176,7 +180,8 @@ service cloud.firestore {
 2. 新增文檔：
 
 **大愛社區：**
-- 文檔 ID：`tenant_dalove_001`（與上面社區管理員的 tenantId 對應）
+
+- 文檔 ID：`tenant_dalove_001`（與上面Line OA 管理員的 tenantId 對應）
 - 欄位：
   ```
   code: "DALOVE001"
@@ -203,6 +208,7 @@ service cloud.firestore {
 4. 點擊「創建索引」並等待完成
 
 常見需要的索引：
+
 - `alerts` 集合：`tenantId` (升序) + `triggeredAt` (降序)
 - `elders` 集合：`tenantId` (升序) + `createdAt` (降序)
 - `devices` 集合：`tenantId` (升序) + `elderId` (升序)
@@ -210,6 +216,7 @@ service cloud.firestore {
 ## 5. 測試登入
 
 1. 啟動開發伺服器：
+
    ```bash
    npm run dev
    ```
@@ -225,6 +232,7 @@ service cloud.firestore {
 ## 6. 創建更多測試資料（選用）
 
 您可以通過管理介面創建：
+
 - 更多社區
 - 長者資料
 - 設備
@@ -236,20 +244,25 @@ service cloud.firestore {
 ## 常見問題
 
 ### Q: 登入時出現 "用戶資料不存在" 錯誤
+
 A: 確保在 Firestore 的 `users` 集合中創建了對應的文檔，且文檔 ID 必須與 Firebase Auth 中的 User UID 完全一致。
 
 ### Q: 無法讀取資料
+
 A: 檢查 Firestore 安全規則是否已正確設置為開放模式（`allow read, write: if true;`）。
 
 ### Q: 索引錯誤
+
 A: 點擊錯誤訊息中的連結創建所需的索引，或等待 Firebase 自動創建。
 
 ### Q: 如何重置測試資料
+
 A: 在 Firestore Console 中可以手動刪除集合或文檔，或使用 Firebase Admin SDK 編寫清理腳本。
 
 ## 安全提醒
 
 ⚠️ **重要**：
+
 - 目前使用的是開放的安全規則，僅適用於開發測試
 - 在部署到生產環境前，必須更新為基於角色的安全規則
 - 定期更改測試帳號密碼
@@ -258,6 +271,7 @@ A: 在 Firestore Console 中可以手動刪除集合或文檔，或使用 Fireba
 ## 下一步
 
 完成以上設置後，您的 Firebase 後端就已經準備就緒！您可以：
+
 1. 開始使用管理介面創建資料
 2. 測試即時監聽功能
 3. 開發新功能

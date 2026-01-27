@@ -1,9 +1,11 @@
 # Community Portal 最終完成總結
 
 ## 完成時間
+
 2026-01-25 22:55
 
 ## 部署狀態
+
 ✅ 全部完成並上線
 
 ---
@@ -15,6 +17,7 @@
 **UI**：Table 格式（與 Admin 一致）
 
 **功能**：
+
 - ✅ 查看長者列表（Table）
 - ✅ 搜尋（姓名/電話/地址）
 - ✅ 新增長者（Modal + 設備選擇）
@@ -24,6 +27,7 @@
 - ✅ 查看設備足跡（時間範圍篩選）
 
 **Table 欄位**：
+
 - 長者（頭像 + 姓名 + 性別/年齡）
 - 聯絡方式（電話）
 - 設備狀態（已綁定/未綁定 + 設備名）
@@ -38,6 +42,7 @@
 **UI**：Table 格式（與 Admin 類似）
 
 **功能**：
+
 - ✅ 查看設備列表（Table）
 - ✅ 搜尋（名稱/UUID/MAC/Major/Minor）
 - ✅ 篩選（全部/已綁定/未綁定）
@@ -46,6 +51,7 @@
 - ❌ 不可新增/編輯/刪除（唯讀）
 
 **Table 欄位**：
+
 - 設備（圖示 + 名稱 + 綁定對象）
 - UUID/Major/Minor
 - 綁定狀態（彩色標籤）
@@ -61,6 +67,7 @@
 **UI**：Table + Modal 選擇
 
 **功能**：
+
 - ✅ Table 顯示已設定的通知點
 - ✅ 點位設定按鈕
 - ✅ Modal 顯示所有 gateways
@@ -69,6 +76,7 @@
 - ✅ 刪除通知點
 
 **Table 欄位**：
+
 - 接收器名稱
 - 位置
 - 類型（彩色標籤）
@@ -77,6 +85,7 @@
 - 操作（刪除）
 
 **Modal 功能**：
+
 - 搜尋框（即時過濾）
 - Gateway 列表（可滾動）
 - 勾選狀態標示
@@ -89,6 +98,7 @@
 **UI**：卡片列表（適合顯示詳細資訊）
 
 **功能**：
+
 - ✅ 查看 LINE 通知歷史
 - ✅ 日期範圍篩選
 - ✅ 按長者篩選
@@ -96,6 +106,7 @@
 - ✅ **查詢已修正**（從 devices/activities）
 
 **顯示內容**：
+
 - 長者姓名
 - 時間戳記
 - 位置（gateway 名稱）
@@ -109,14 +120,15 @@
 
 ### 所有頁面採用一致風格
 
-| 頁面 | 格式 | 搜尋 | 篩選 | Modal | 與 Admin |
-|------|------|------|------|-------|---------|
-| 長者管理 | Table | ✅ | ❌ | ✅ | ✅ 一致 |
-| 設備清單 | Table | ✅ | ✅ | ✅ | ✅ 類似 |
-| 通知點 | Table | ❌ | ❌ | ✅ | ✅ 類似 |
-| 通知記錄 | 卡片 | ❌ | ✅ | ❌ | 合適 |
+| 頁面     | 格式  | 搜尋 | 篩選 | Modal | 與 Admin |
+| -------- | ----- | ---- | ---- | ----- | -------- |
+| 長者管理 | Table | ✅   | ❌   | ✅    | ✅ 一致  |
+| 設備清單 | Table | ✅   | ✅   | ✅    | ✅ 類似  |
+| 通知點   | Table | ❌   | ❌   | ✅    | ✅ 類似  |
+| 通知記錄 | 卡片  | ❌   | ✅   | ❌    | 合適     |
 
 **設計原則**：
+
 - 列表數據 → Table
 - 詳細資訊 → 卡片或 Modal
 - 新增/編輯 → Modal
@@ -166,14 +178,17 @@
 ### 多應用同時登入
 
 **Admin**：
+
 - Firebase App: 'AdminApp'
 - URL: https://safe-net-tw.web.app
 
 **Community Portal**：
+
 - Firebase App: 'CommunityPortalApp'
 - URL: https://safe-net-tw.web.app/community
 
 **LIFF**：
+
 - LINE OAuth（獨立）
 - URL: https://safe-net-tw.web.app/liff
 
@@ -233,7 +248,7 @@
 ## 資料架構
 
 ```
-saas_users (社區管理員)
+saas_users (Line OA 管理員)
 ├─ firebaseUid
 ├─ email
 ├─ tenantId
@@ -281,13 +296,13 @@ tenantNotificationPoints (通知點)
 
 ### Community Portal 所有頁面
 
-| 頁面 | 格式 | 特點 |
-|------|------|------|
-| 長者管理 | Table | 搜尋、編輯、詳情 |
-| 長者詳情 | 頁面 | 基本資料、設備、足跡 |
-| 設備清單 | Table | 搜尋、篩選、詳情（唯讀） |
-| 通知記錄 | 卡片 | 篩選、時間軸 |
-| 通知點 | Table + Modal | 搜尋、勾選 |
+| 頁面     | 格式          | 特點                     |
+| -------- | ------------- | ------------------------ |
+| 長者管理 | Table         | 搜尋、編輯、詳情         |
+| 長者詳情 | 頁面          | 基本資料、設備、足跡     |
+| 設備清單 | Table         | 搜尋、篩選、詳情（唯讀） |
+| 通知記錄 | 卡片          | 篩選、時間軸             |
+| 通知點   | Table + Modal | 搜尋、勾選               |
 
 **所有列表頁面都是 Table 格式！**
 
@@ -320,12 +335,14 @@ tenantNotificationPoints (通知點)
 ## 重要文檔
 
 **最新更新**：
+
 - `設備清單UI更新完成.md` - 設備 Table 更新
 - `通知記錄查詢修正.md` - 通知記錄修正
 - `通知點新UI使用說明.md` - 通知點 Table
 - `長者管理UI統一完成.md` - 長者 Table
 
 **快速參考**：
+
 - `使用指南_一頁版.md` - 快速開始
 - `Community_Portal_與_Admin_UI對比.md` - UI 對比
 
@@ -350,11 +367,13 @@ tenantNotificationPoints (通知點)
 ## 立即使用
 
 **Community Portal**：
+
 ```
 https://safe-net-tw.web.app/community
 ```
 
 **功能頁面**：
+
 - 長者管理：`/community/elders`
 - 設備清單：`/community/devices`
 - 通知記錄：`/community/notification-logs`

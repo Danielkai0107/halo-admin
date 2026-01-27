@@ -280,7 +280,7 @@ export const ElderListScreen = () => {
             </button>
             <button
               onClick={() => setShowBatchImportModal(true)}
-              className="flex items-center space-x-2 btn btn-secondary text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              className="flex items-center space-x-2 btn btn-secondary text-primary-600 hover:text-primary-700 hover:bg-primary-50"
               title="批次匯入長輩"
             >
               <Upload className="w-5 h-5" />
