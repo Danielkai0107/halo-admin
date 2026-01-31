@@ -63,7 +63,7 @@ const NOTIFICATION_COOLDOWN_MS = 3 * 60 * 1000; // 3 分鐘：避免通知轟炸
 // ============================================
 // 使用 RTDB 存放頻繁更新的資料，降低 Firestore 讀取成本
 // RTDB 按資料傳輸量計費，而非按操作次數
-// 
+//
 // RTDB 資料結構：
 // {
 //   "deviceStatus": {
@@ -156,7 +156,9 @@ async function updateActivityCooldownInRtdb(deviceId, gatewayId, timestamp) {
 async function checkNotificationCooldownFromRtdb(cooldownKey, currentTimestamp) {
     try {
         const rtdb = getRtdb();
-        const snapshot = await rtdb.ref(`notificationCooldowns/${cooldownKey}`).get();
+        const snapshot = await rtdb
+            .ref(`notificationCooldowns/${cooldownKey}`)
+            .get();
         if (snapshot.exists()) {
             const lastSentTime = snapshot.val();
             const timeSinceLastSent = currentTimestamp - lastSentTime;
