@@ -1,9 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { Gateway, Elder } from "../types";
 import {
   clusterGateways,
   getClusterThresholdByZoom,
 } from "../utils/clusterHelper";
+
+interface UserLocationMarker {
+  lat: number;
+  lng: number;
+  gender?: "MALE" | "FEMALE" | "OTHER" | null;
+  avatarUrl?: string;
+  nickname?: string;
+}
 
 interface UseMapMarkersOptions {
   map: google.maps.Map | null;
@@ -11,6 +19,7 @@ interface UseMapMarkersOptions {
   selectedElder: Elder | null;
   currentLocation: { lat: number; lng: number } | null;
   onGatewayClick?: (gateway: Gateway) => void;
+  userLocationMarker?: UserLocationMarker | null;
 }
 
 export const useMapMarkers = ({
@@ -19,9 +28,14 @@ export const useMapMarkers = ({
   selectedElder,
   currentLocation,
   onGatewayClick,
+  userLocationMarker,
 }: UseMapMarkersOptions) => {
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
   const [zoomLevel, setZoomLevel] = useState<number>(15);
+  const [pulseCircle, setPulseCircle] = useState<google.maps.Circle | null>(
+    null,
+  );
+  const pulseIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Listen to zoom changes
   useEffect(() => {
@@ -172,12 +186,90 @@ export const useMapMarkers = ({
       }
     }
 
+    // 添加用戶位置標記（顯示在最新活動位置）
+    // 先清除舊的呼吸燈效果
+    if (pulseCircle) {
+      pulseCircle.setMap(null);
+      setPulseCircle(null);
+    }
+    if (pulseIntervalRef.current) {
+      clearInterval(pulseIntervalRef.current);
+      pulseIntervalRef.current = null;
+    }
+
+    if (userLocationMarker) {
+      const { lat, lng, avatarUrl, nickname } = userLocationMarker;
+      const icon = avatarUrl
+        ? {
+            url: avatarUrl,
+            scaledSize: new google.maps.Size(56, 56),
+            anchor: new google.maps.Point(28, 28),
+          }
+        : {
+            url: createUserAvatarIconDataUrl(),
+            scaledSize: new google.maps.Size(56, 56),
+            anchor: new google.maps.Point(28, 28),
+          };
+
+      // 創建呼吸燈效果的 Circle
+      const circle = new google.maps.Circle({
+        center: { lat, lng },
+        radius: 25, // 起始半徑 25 公尺
+        map,
+        fillColor: "#FFC107", // 黃色
+        fillOpacity: 0.25,
+        strokeWeight: 0, // 無邊框
+        zIndex: 1000,
+      });
+      setPulseCircle(circle);
+
+      // 呼吸燈動畫（微小放大縮小效果）
+      let radius = 25;
+      let increasing = true;
+      pulseIntervalRef.current = setInterval(() => {
+        if (increasing) {
+          radius += 0.1;
+          if (radius >= 28) {
+            increasing = false;
+          }
+        } else {
+          radius -= 0.1;
+          if (radius <= 25) {
+            increasing = true;
+          }
+        }
+        circle.setRadius(radius);
+      }, 80);
+
+      const marker = new google.maps.Marker({
+        position: { lat, lng },
+        map,
+        title: nickname || "我的位置",
+        icon,
+        optimized: false,
+        zIndex: 1001,
+      });
+
+      // 點擊頭像圖標時 zoom in
+      marker.addListener("click", () => {
+        map.panTo({ lat, lng });
+        map.setZoom(18);
+      });
+
+      newMarkers.push(marker);
+    }
+
     setMarkers(newMarkers);
 
     return () => {
       newMarkers.forEach((marker) => marker.setMap(null));
+      // 清除呼吸燈效果
+      if (pulseIntervalRef.current) {
+        clearInterval(pulseIntervalRef.current);
+        pulseIntervalRef.current = null;
+      }
     };
-  }, [map, gateways, selectedElder, zoomLevel]);
+  }, [map, gateways, selectedElder, zoomLevel, userLocationMarker]);
 
   return { markers };
 };
@@ -248,6 +340,18 @@ const createElderIconDataUrl = (): string => {
   const svg = `
     <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
       <circle cx="28" cy="28" r="26" fill="#FFC107" stroke="white" stroke-width="4" />
+      <g transform="translate(16, 16)">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="white"/>
+      </g>
+    </svg>
+  `;
+  return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+};
+
+const createUserAvatarIconDataUrl = (): string => {
+  const svg = `
+    <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="28" cy="28" r="26" fill="#4ECDC4" stroke="white" stroke-width="4" />
       <g transform="translate(16, 16)">
         <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="white"/>
       </g>

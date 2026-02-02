@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { BottomSheet } from "../../components/map/BottomSheet";
 import { Modal } from "../../components/map/Modal";
 import { TimelineItem, DateGroup } from "../../components/map/TimelineItem";
@@ -21,6 +21,8 @@ import { useAuth } from "../../hooks/useAuth";
 import * as deviceService from "../../services/deviceService";
 import * as notificationPointService from "../../services/notificationPointService";
 import * as activityService from "../../services/activityService";
+import elderMaleAvatar from "../../assets/elder_male.png";
+import elderFemaleAvatar from "../../assets/elder_female.png";
 
 export const MapScreen = () => {
   const tenant = useTenantStore((state) => state.selectedTenant);
@@ -91,6 +93,32 @@ export const MapScreen = () => {
     },
   });
 
+  // 計算用戶位置標記（顯示在最新活動位置）
+  const userLocationMarker = useMemo(() => {
+    const lastActivity = activities.length > 0 ? activities[0] : null;
+    if (!lastActivity || !lastActivity.latitude || !lastActivity.longitude) {
+      return null;
+    }
+    return {
+      lat: lastActivity.latitude,
+      lng: lastActivity.longitude,
+      gender: boundDevice?.mapUserGender as "MALE" | "FEMALE" | "OTHER" | null,
+      avatarUrl:
+        boundDevice?.mapUserGender === "FEMALE"
+          ? elderFemaleAvatar
+          : boundDevice?.mapUserGender === "MALE"
+            ? elderMaleAvatar
+            : undefined,
+      nickname: boundDevice?.mapUserNickname || boundDevice?.deviceName,
+    };
+  }, [
+    activities[0]?.latitude,
+    activities[0]?.longitude,
+    boundDevice?.mapUserGender,
+    boundDevice?.mapUserNickname,
+    boundDevice?.deviceName,
+  ]);
+
   // 管理地圖標記
   useMapMarkers({
     map,
@@ -98,12 +126,35 @@ export const MapScreen = () => {
     selectedElder,
     currentLocation,
     onGatewayClick: handleGatewayClick,
+    userLocationMarker,
   });
 
-  // 當位置獲取成功後，自動移動地圖到當前位置（只執行一次）
+  // 當有活動紀錄時，自動移動地圖到最新活動位置（優先）
+  useEffect(() => {
+    if (
+      map &&
+      !hasInitiallyLocated.current &&
+      isLoaded &&
+      activities.length > 0
+    ) {
+      const lastActivity = activities[0];
+      if (lastActivity.latitude && lastActivity.longitude) {
+        hasInitiallyLocated.current = true;
+        map.panTo({ lat: lastActivity.latitude, lng: lastActivity.longitude });
+        map.setZoom(17);
+        console.log("已自動定位到最新活動位置:", {
+          lat: lastActivity.latitude,
+          lng: lastActivity.longitude,
+          gatewayName: lastActivity.gatewayName,
+        });
+      }
+    }
+  }, [map, isLoaded, activities]);
+
+  // 當沒有活動紀錄時，自動移動地圖到當前位置（備用）
   useEffect(() => {
     if (map && currentLocation && !hasInitiallyLocated.current && isLoaded) {
-      // 等待地圖完全載入後再定位
+      // 等待一小段時間，看是否有活動數據載入
       setTimeout(() => {
         if (!hasInitiallyLocated.current) {
           hasInitiallyLocated.current = true;
@@ -111,7 +162,7 @@ export const MapScreen = () => {
           map.setZoom(16);
           console.log("已自動定位到當前位置:", currentLocation);
         }
-      }, 500);
+      }, 1000);
     }
   }, [map, currentLocation, isLoaded]);
 
@@ -174,6 +225,20 @@ export const MapScreen = () => {
       return;
     }
 
+    // 如果有活動紀錄，定位到最新紀錄的位置
+    const lastActivity = activities.length > 0 ? activities[0] : null;
+    if (lastActivity && lastActivity.latitude && lastActivity.longitude) {
+      console.log("定位到最新活動位置:", {
+        lat: lastActivity.latitude,
+        lng: lastActivity.longitude,
+        gatewayName: lastActivity.gatewayName,
+      });
+      map.panTo({ lat: lastActivity.latitude, lng: lastActivity.longitude });
+      map.setZoom(17);
+      return;
+    }
+
+    // 沒有活動紀錄時，定位到裝置位置
     if (!navigator.geolocation) {
       console.error("此裝置不支援定位功能");
       alert("此裝置不支援定位功能");
@@ -705,7 +770,29 @@ export const MapScreen = () => {
           <div className="timeline-header">
             <div className="device-info">
               <div className="device-avatar">
-                {boundDevice?.mapUserNickname ? (
+                {boundDevice?.mapUserGender === "FEMALE" ? (
+                  <img
+                    src={elderFemaleAvatar}
+                    alt="女性頭像"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "50%",
+                    }}
+                  />
+                ) : boundDevice?.mapUserGender === "MALE" ? (
+                  <img
+                    src={elderMaleAvatar}
+                    alt="男性頭像"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "50%",
+                    }}
+                  />
+                ) : boundDevice?.mapUserNickname ? (
                   <div
                     style={{
                       width: "100%",
@@ -1027,19 +1114,23 @@ export const MapScreen = () => {
               >
                 {isSavingProfile ? "儲存中..." : "儲存"}
               </button>
-              <button
-                className="btn btn-danger"
-                onClick={handleUnbind}
-                disabled={isUnbinding}
-              >
-                {isUnbinding ? "解綁中..." : "解除綁定"}
-              </button>
-              <button
-                className="btn btn-outline"
-                onClick={() => setIsBindModalOpen(false)}
-              >
-                關閉
-              </button>
+              <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+                <button
+                  className="btn btn-danger"
+                  onClick={handleUnbind}
+                  disabled={isUnbinding}
+                  style={{ flex: 1 }}
+                >
+                  {isUnbinding ? "解綁中..." : "解除綁定"}
+                </button>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setIsBindModalOpen(false)}
+                  style={{ flex: 1 }}
+                >
+                  關閉
+                </button>
+              </div>
             </div>
           </>
         ) : (
