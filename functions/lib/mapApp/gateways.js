@@ -46,15 +46,15 @@ const https_1 = require("firebase-functions/v2/https");
  */
 exports.getPublicGateways = (0, https_1.onRequest)(async (req, res) => {
     // CORS handling
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (req.method === 'OPTIONS') {
-        res.status(204).send('');
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if (req.method === "OPTIONS") {
+        res.status(204).send("");
         return;
     }
-    if (req.method !== 'GET') {
-        res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== "GET") {
+        res.status(405).json({ success: false, error: "Method not allowed" });
         return;
     }
     try {
@@ -62,12 +62,13 @@ exports.getPublicGateways = (0, https_1.onRequest)(async (req, res) => {
         // Query all active gateways (including both public and tenant gateways)
         // All gateways form the safety network for map app users
         const gatewaysSnapshot = await db
-            .collection('gateways')
-            .where('isActive', '==', true)
+            .collection("gateways")
+            .where("isActive", "==", true)
             .get();
-        const gateways = gatewaysSnapshot.docs.map(doc => {
+        // Join Store data for gateways
+        const gateways = await Promise.all(gatewaysSnapshot.docs.map(async (doc) => {
             const data = doc.data();
-            return {
+            const gateway = {
                 id: doc.id,
                 name: data.name,
                 location: data.location,
@@ -75,9 +76,35 @@ exports.getPublicGateways = (0, https_1.onRequest)(async (req, res) => {
                 longitude: data.longitude,
                 type: data.type,
                 serialNumber: data.serialNumber,
-                tenantId: data.tenantId || null, // Include tenant info for reference
+                tenantId: data.tenantId || null,
+                storeId: data.storeId || null,
             };
-        });
+            // Join Store data if storeId exists
+            if (data.storeId) {
+                try {
+                    const storeDoc = await db
+                        .collection("stores")
+                        .doc(data.storeId)
+                        .get();
+                    if (storeDoc.exists) {
+                        const storeData = storeDoc.data();
+                        gateway.store = {
+                            id: storeDoc.id,
+                            name: storeData === null || storeData === void 0 ? void 0 : storeData.name,
+                            storeLogo: storeData === null || storeData === void 0 ? void 0 : storeData.storeLogo,
+                            imageLink: storeData === null || storeData === void 0 ? void 0 : storeData.imageLink,
+                            activityTitle: storeData === null || storeData === void 0 ? void 0 : storeData.activityTitle,
+                            activityContent: storeData === null || storeData === void 0 ? void 0 : storeData.activityContent,
+                            websiteLink: storeData === null || storeData === void 0 ? void 0 : storeData.websiteLink,
+                        };
+                    }
+                }
+                catch (error) {
+                    console.error(`Failed to join store for gateway ${doc.id}:`, error);
+                }
+            }
+            return gateway;
+        }));
         res.json({
             success: true,
             gateways: gateways,
@@ -86,10 +113,10 @@ exports.getPublicGateways = (0, https_1.onRequest)(async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Error in getPublicGateways:', error);
+        console.error("Error in getPublicGateways:", error);
         res.status(500).json({
             success: false,
-            error: error.message || 'Internal server error'
+            error: error.message || "Internal server error",
         });
     }
 });

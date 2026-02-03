@@ -401,7 +401,7 @@ async function getGatewayInfo(gatewayId, db) {
         }
         const gatewayDoc = gatewayQuery.docs[0];
         const gatewayData = gatewayDoc.data();
-        return Object.assign(Object.assign({ id: gatewayDoc.id }, gatewayData), { isAD: (gatewayData === null || gatewayData === void 0 ? void 0 : gatewayData.isAD) || false });
+        return Object.assign({ id: gatewayDoc.id }, gatewayData);
     }
     catch (error) {
         console.error("Error querying gateway:", error);
@@ -868,7 +868,7 @@ async function recordDeviceActivity(deviceId, device, beacon, gateway, lat, lng,
     const activityData = {
         timestamp: admin.firestore.Timestamp.fromMillis(timestamp),
         gatewayId: gateway.id,
-        gatewayName: gateway.name,
+        gatewayName: gateway.location || gateway.name, // 優先使用 location
         gatewayType: gateway.type,
         latitude: lat,
         longitude: lng,
@@ -991,9 +991,10 @@ async function handleElderNotification(deviceId, elderId, beacon, gateway, lat, 
         console.log(`Elder ${elder.name} passed through notification point ${gateway.name} (群發通知)`);
         // 6. Send notification point alert to all members (群發)
         // 使用簡化的通知資料（不需要 pointData）
+        const locationName = gateway.location || gateway.name || "通知點";
         const notificationPointData = {
-            name: gateway.name || "通知點",
-            notificationMessage: `${elder.name} 已通過 ${gateway.name || "通知點"}`,
+            name: locationName,
+            notificationMessage: `${elder.name} 已通過 ${locationName}`,
         };
         await sendTenantNotificationPointAlert(elderId, elder, notificationPointData, gateway, lat, lng, timestamp, tenantId, channelAccessToken, db);
         // 7. 記錄冷卻時間（使用 RTDB）
@@ -1008,7 +1009,7 @@ async function handleElderNotification(deviceId, elderId, beacon, gateway, lat, 
                 tenantId: tenantId,
                 buType: "group",
                 gatewayType: gateway.type,
-                notificationPointName: gateway.name || "通知點",
+                notificationPointName: gateway.location || gateway.name || "通知點",
                 notificationType: "NOTIFICATION_POINT_BROADCAST",
             },
         };
@@ -1059,7 +1060,7 @@ async function handleMapUserNotification(deviceId, mapAppUserId, beacon, gateway
             const inheritedIds = deviceData.inheritedNotificationPointIds;
             if (inheritedIds.includes(gateway.id)) {
                 isNotificationPoint = true;
-                notificationPointName = gateway.name || "通知點";
+                notificationPointName = gateway.location || gateway.name || "通知點";
                 console.log(`Gateway ${gateway.id} is in inherited notification points`);
             }
         }
@@ -1119,7 +1120,7 @@ async function handleMapUserNotification(deviceId, mapAppUserId, beacon, gateway
                     data: {
                         type: "LOCATION_ALERT",
                         gatewayId: gateway.id,
-                        gatewayName: gateway.name || "",
+                        gatewayName: gateway.location || gateway.name || "",
                         deviceId: deviceId,
                         notificationPointId: notificationPointId,
                         latitude: lat.toString(),
@@ -1293,6 +1294,30 @@ async function handleLineUserNotification(deviceId, lineUserDocId, beacon, gatew
         }
         // 6. 發送單發通知
         const { sendNotificationPointAlert } = await Promise.resolve().then(() => __importStar(require("../line/sendMessage")));
+        // Join Store data if gateway has storeId
+        let storeInfo;
+        if (gateway.storeId) {
+            try {
+                const storeDoc = await db
+                    .collection("stores")
+                    .doc(gateway.storeId)
+                    .get();
+                if (storeDoc.exists) {
+                    const storeData = storeDoc.data();
+                    storeInfo = {
+                        name: (storeData === null || storeData === void 0 ? void 0 : storeData.name) || "",
+                        storeLogo: storeData === null || storeData === void 0 ? void 0 : storeData.storeLogo,
+                        imageLink: storeData === null || storeData === void 0 ? void 0 : storeData.imageLink,
+                        activityTitle: storeData === null || storeData === void 0 ? void 0 : storeData.activityTitle,
+                        activityContent: storeData === null || storeData === void 0 ? void 0 : storeData.activityContent,
+                        websiteLink: storeData === null || storeData === void 0 ? void 0 : storeData.websiteLink,
+                    };
+                }
+            }
+            catch (error) {
+                console.error(`Failed to load store ${gateway.storeId}:`, error);
+            }
+        }
         try {
             await sendNotificationPointAlert(lineUserId, channelAccessToken, {
                 gatewayName: gateway.location || gateway.name || "通知點",
@@ -1301,12 +1326,7 @@ async function handleLineUserNotification(deviceId, lineUserDocId, beacon, gatew
                 longitude: lng,
                 timestamp: new Date(timestamp).toISOString(),
                 // 商家相關資訊
-                isAD: gateway.isAD,
-                storeLogo: gateway.storeLogo,
-                imageLink: gateway.imageLink,
-                activityTitle: gateway.activityTitle,
-                activityContent: gateway.activityContent,
-                websiteLink: gateway.websiteLink,
+                store: storeInfo,
             });
             console.log(`✓ Sent LINE notification to ${lineUserId} via tenant ${tenantId} (BU_type=${buType})`);
             // 7. 記錄冷卻時間（使用 RTDB）
@@ -1317,10 +1337,10 @@ async function handleLineUserNotification(deviceId, lineUserDocId, beacon, gatew
                 deviceId: deviceId,
                 lineUserId: lineUserId,
                 gatewayId: gateway.id,
-                gatewayName: gateway.name || "未知位置",
+                gatewayName: gateway.location || gateway.name || "未知位置",
                 latitude: lat,
                 longitude: lng,
-                title: `已通過：${gateway.name || "通知點"}`,
+                title: `已通過：${gateway.location || gateway.name || "通知點"}`,
                 message: `您的設備已通過通知點`,
                 status: "PENDING",
                 triggeredAt: new Date(timestamp).toISOString(),
@@ -1337,7 +1357,7 @@ async function handleLineUserNotification(deviceId, lineUserDocId, beacon, gatew
                     lineUserId: lineUserId,
                     tenantId: tenantId,
                     buType: buType,
-                    gatewayName: gateway.name,
+                    gatewayName: gateway.location || gateway.name,
                 },
             };
         }
@@ -1392,7 +1412,7 @@ async function processBeacon(beacon, gateway, uploadedLat, uploadedLng, timestam
             lastSeen: timestamp,
             lastRssi: beacon.rssi,
             lastGatewayId: gateway.id,
-            lastGatewayName: gateway.name || "",
+            lastGatewayName: gateway.location || gateway.name || "",
             lastLat: lat,
             lastLng: lng,
         };

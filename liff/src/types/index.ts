@@ -112,6 +112,22 @@ export const DeviceType = {
   GENERIC_BLE: "GENERIC_BLE",
 } as const;
 
+// Store (商店)
+export interface Store {
+  id: string;
+  name: string;
+  storeLogo?: string;
+  imageLink?: string;
+  websiteLink?: string;
+  activityTitle?: string;
+  activityContent?: string;
+  storePassword?: string;
+  adminIds: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Gateway
 export interface Gateway {
   id: string;
@@ -126,13 +142,8 @@ export interface Gateway {
   longitude?: number;
   deviceInfo?: any;
   isActive: boolean;
-  isAD?: boolean; // 是否為行銷點
-  storeLogo?: string; // 店家 Logo
-  imageLink?: string; // 店家圖片/Banner
-  activityTitle?: string; // 活動標題
-  activityContent?: string; // 活動內容
-  websiteLink?: string; // 官網連結
-  storePassword?: string; // 商家密碼
+  storeId?: string | null; // 綁定的商店 ID
+  store?: Store; // 關聯的商店資料（join 後）
   tenant?: Tenant;
 }
 

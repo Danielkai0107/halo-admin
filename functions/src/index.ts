@@ -41,6 +41,11 @@ import {
   getLineUserNotificationPoints,
 } from "./mapApp/lineUserNotificationPoints";
 import { getLineUserActivities } from "./mapApp/lineUserActivities";
+// Migrations
+import {
+  migrateStoreData,
+  rollbackStoreMigration,
+} from "./migrations/migrateStoreData";
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -82,4 +87,7 @@ export {
   removeLineUserNotificationPoint,
   getLineUserNotificationPoints,
   getLineUserActivities,
+  // Migrations
+  migrateStoreData,
+  rollbackStoreMigration,
 };

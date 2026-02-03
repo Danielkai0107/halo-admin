@@ -39,8 +39,11 @@ export interface GatewayInfo {
   latitude?: number;
   longitude?: number;
   isActive: boolean;
-  isAD?: boolean; // 行銷點標記
-  // 商家專用欄位
+  storeId?: string | null; // 綁定的商店 ID
+}
+
+interface StoreInfo {
+  name: string;
   storeLogo?: string;
   imageLink?: string;
   activityTitle?: string;
@@ -216,7 +219,9 @@ async function checkNotificationCooldownFromRtdb(
       const timeSinceLastSent = currentTimestamp - lastSentTime;
       if (timeSinceLastSent < NOTIFICATION_COOLDOWN_MS) {
         console.log(
-          `Skipping notification (RTDB cooldown: ${Math.round(timeSinceLastSent / 1000)}s / ${NOTIFICATION_COOLDOWN_MS / 1000}s)`,
+          `Skipping notification (RTDB cooldown: ${Math.round(
+            timeSinceLastSent / 1000,
+          )}s / ${NOTIFICATION_COOLDOWN_MS / 1000}s)`,
         );
         return false; // 在冷卻期內，不應發送
       }
@@ -518,7 +523,6 @@ async function getGatewayInfo(
     return {
       id: gatewayDoc.id,
       ...gatewayData,
-      isAD: gatewayData?.isAD || false, // 預設為 false
     } as GatewayInfo;
   } catch (error) {
     console.error("Error querying gateway:", error);
@@ -1073,7 +1077,7 @@ async function recordDeviceActivity(
   const activityData: any = {
     timestamp: admin.firestore.Timestamp.fromMillis(timestamp),
     gatewayId: gateway.id,
-    gatewayName: gateway.name,
+    gatewayName: gateway.location || gateway.name, // 優先使用 location
     gatewayType: gateway.type,
     latitude: lat,
     longitude: lng,
@@ -1295,9 +1299,10 @@ async function handleElderNotification(
 
     // 6. Send notification point alert to all members (群發)
     // 使用簡化的通知資料（不需要 pointData）
+    const locationName = gateway.location || gateway.name || "通知點";
     const notificationPointData = {
-      name: gateway.name || "通知點",
-      notificationMessage: `${elder.name} 已通過 ${gateway.name || "通知點"}`,
+      name: locationName,
+      notificationMessage: `${elder.name} 已通過 ${locationName}`,
     };
 
     await sendTenantNotificationPointAlert(
@@ -1329,7 +1334,7 @@ async function handleElderNotification(
         tenantId: tenantId,
         buType: "group",
         gatewayType: gateway.type,
-        notificationPointName: gateway.name || "通知點",
+        notificationPointName: gateway.location || gateway.name || "通知點",
         notificationType: "NOTIFICATION_POINT_BROADCAST",
       },
     };
@@ -1399,7 +1404,7 @@ async function handleMapUserNotification(
       const inheritedIds = deviceData.inheritedNotificationPointIds as string[];
       if (inheritedIds.includes(gateway.id)) {
         isNotificationPoint = true;
-        notificationPointName = gateway.name || "通知點";
+        notificationPointName = gateway.location || gateway.name || "通知點";
         console.log(
           `Gateway ${gateway.id} is in inherited notification points`,
         );
@@ -1472,7 +1477,7 @@ async function handleMapUserNotification(
           data: {
             type: "LOCATION_ALERT",
             gatewayId: gateway.id,
-            gatewayName: gateway.name || "",
+            gatewayName: gateway.location || gateway.name || "",
             deviceId: deviceId,
             notificationPointId: notificationPointId,
             latitude: lat.toString(),
@@ -1655,7 +1660,9 @@ async function handleLineUserNotification(
         (deviceData.inheritedNotificationPointIds as string[]) || [];
 
       console.log(
-        `Safe mode: checking notification points [${notificationPointIds.join(", ")}]`,
+        `Safe mode: checking notification points [${notificationPointIds.join(
+          ", ",
+        )}]`,
       );
 
       if (!notificationPointIds.includes(gateway.id)) {
@@ -1702,6 +1709,30 @@ async function handleLineUserNotification(
     // 6. 發送單發通知
     const { sendNotificationPointAlert } = await import("../line/sendMessage");
 
+    // Join Store data if gateway has storeId
+    let storeInfo: StoreInfo | undefined;
+    if (gateway.storeId) {
+      try {
+        const storeDoc = await db
+          .collection("stores")
+          .doc(gateway.storeId)
+          .get();
+        if (storeDoc.exists) {
+          const storeData = storeDoc.data();
+          storeInfo = {
+            name: storeData?.name || "",
+            storeLogo: storeData?.storeLogo,
+            imageLink: storeData?.imageLink,
+            activityTitle: storeData?.activityTitle,
+            activityContent: storeData?.activityContent,
+            websiteLink: storeData?.websiteLink,
+          };
+        }
+      } catch (error) {
+        console.error(`Failed to load store ${gateway.storeId}:`, error);
+      }
+    }
+
     try {
       await sendNotificationPointAlert(lineUserId, channelAccessToken, {
         gatewayName: gateway.location || gateway.name || "通知點",
@@ -1710,12 +1741,7 @@ async function handleLineUserNotification(
         longitude: lng,
         timestamp: new Date(timestamp).toISOString(),
         // 商家相關資訊
-        isAD: gateway.isAD,
-        storeLogo: gateway.storeLogo,
-        imageLink: gateway.imageLink,
-        activityTitle: gateway.activityTitle,
-        activityContent: gateway.activityContent,
-        websiteLink: gateway.websiteLink,
+        store: storeInfo,
       });
 
       console.log(
@@ -1731,10 +1757,10 @@ async function handleLineUserNotification(
         deviceId: deviceId,
         lineUserId: lineUserId,
         gatewayId: gateway.id,
-        gatewayName: gateway.name || "未知位置",
+        gatewayName: gateway.location || gateway.name || "未知位置",
         latitude: lat,
         longitude: lng,
-        title: `已通過：${gateway.name || "通知點"}`,
+        title: `已通過：${gateway.location || gateway.name || "通知點"}`,
         message: `您的設備已通過通知點`,
         status: "PENDING",
         triggeredAt: new Date(timestamp).toISOString(),
@@ -1753,7 +1779,7 @@ async function handleLineUserNotification(
           lineUserId: lineUserId,
           tenantId: tenantId,
           buType: buType,
-          gatewayName: gateway.name,
+          gatewayName: gateway.location || gateway.name,
         },
       };
     } catch (sendError) {
@@ -1825,7 +1851,7 @@ export async function processBeacon(
       lastSeen: timestamp,
       lastRssi: beacon.rssi,
       lastGatewayId: gateway.id,
-      lastGatewayName: gateway.name || "",
+      lastGatewayName: gateway.location || gateway.name || "",
       lastLat: lat,
       lastLng: lng,
     };
@@ -1857,11 +1883,15 @@ export async function processBeacon(
       await deviceDoc.ref.update(deviceUpdateData);
       updateDeviceCache(deviceId, timestamp);
       console.log(
-        `Updated device ${deviceId} in Firestore - batteryLevel: ${beacon.batteryLevel ?? "N/A"}`,
+        `Updated device ${deviceId} in Firestore - batteryLevel: ${
+          beacon.batteryLevel ?? "N/A"
+        }`,
       );
     } else {
       console.log(
-        `Updated device ${deviceId} in RTDB only (Firestore within ${DEVICE_UPDATE_COOLDOWN_MS / 1000}s cooldown)`,
+        `Updated device ${deviceId} in RTDB only (Firestore within ${
+          DEVICE_UPDATE_COOLDOWN_MS / 1000
+        }s cooldown)`,
       );
     }
 
@@ -1942,7 +1972,9 @@ export async function processBeacon(
       );
     } else {
       console.log(
-        `Skipped activity record for ${deviceId} at gateway ${gateway.id} (within ${ACTIVITY_RECORD_COOLDOWN_MS / 1000}s cooldown)`,
+        `Skipped activity record for ${deviceId} at gateway ${
+          gateway.id
+        } (within ${ACTIVITY_RECORD_COOLDOWN_MS / 1000}s cooldown)`,
       );
     }
 
@@ -2003,7 +2035,9 @@ export const receiveBeaconData = onRequest(
       const gateway = await getOrCreateGateway(payload.gateway_id, payload, db);
 
       console.log(
-        `Gateway: ${gateway.name} (${gateway.type}) - Tenant: ${gateway.tenantId || "None"}`,
+        `Gateway: ${gateway.name} (${gateway.type}) - Tenant: ${
+          gateway.tenantId || "None"
+        }`,
       );
 
       // Step 3: Batch process all beacons using Promise.all

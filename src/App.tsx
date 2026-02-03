@@ -15,6 +15,7 @@ import { UUIDsPage } from "./pages/UUIDsPage";
 import { GatewaysPage } from "./pages/GatewaysPage";
 import { StoresPage } from "./pages/StoresPage";
 import { StoreDetailPage } from "./pages/StoreDetailPage";
+import { ShopUsersPage } from "./pages/ShopUsersPage";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuthStore } from "./store/authStore";
@@ -67,6 +68,7 @@ function App() {
           <Route path="gateways" element={<GatewaysPage />} />
           <Route path="stores" element={<StoresPage />} />
           <Route path="stores/:id" element={<StoreDetailPage />} />
+          <Route path="shop-users" element={<ShopUsersPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

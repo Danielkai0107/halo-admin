@@ -75,7 +75,7 @@ export const useMapMarkers = ({
           strokeColor: "#ffffff",
           strokeWeight: 2,
         },
-        zIndex: 1000,
+        zIndex: 50, // 低於 gateway 圖標
       });
 
       newMarkers.push(currentLocationMarker);
@@ -103,6 +103,7 @@ export const useMapMarkers = ({
             title: gateway.name,
             icon: createGatewayIcon(gateway),
             optimized: false,
+            zIndex: 100, // Gateway 圖標層級
           });
 
           marker.addListener("click", () => {
@@ -118,7 +119,7 @@ export const useMapMarkers = ({
             title: `${cluster.gateways.length} 個接收點`,
             icon: createClusterIcon(cluster.gateways.length),
             optimized: false,
-            zIndex: 999,
+            zIndex: 150, // 集群圖標高於單個 gateway
           });
 
           // 點擊集群時放大地圖或顯示列表
@@ -143,6 +144,7 @@ export const useMapMarkers = ({
             title: gateway.name,
             icon: createGatewayIcon(gateway),
             optimized: false,
+            zIndex: 100, // Gateway 圖標層級
           });
 
           marker.addListener("click", () => {
@@ -199,6 +201,21 @@ export const useMapMarkers = ({
 
     if (userLocationMarker) {
       const { lat, lng, avatarUrl, nickname } = userLocationMarker;
+
+      // 檢查是否與任何 gateway 位置重疊，如果重疊則偏移
+      const OFFSET = 0.00012; // 約 13 公尺的偏移
+      const isOverlapping = gateways.some(
+        (g) =>
+          g.latitude &&
+          g.longitude &&
+          Math.abs(g.latitude - lat) < 0.0001 &&
+          Math.abs(g.longitude - lng) < 0.0001,
+      );
+
+      // 如果重疊，將頭像往左上方偏移
+      const offsetLat = isOverlapping ? lat + OFFSET : lat;
+      const offsetLng = isOverlapping ? lng - OFFSET : lng;
+
       const icon = avatarUrl
         ? {
             url: avatarUrl,
@@ -211,15 +228,15 @@ export const useMapMarkers = ({
             anchor: new google.maps.Point(28, 28),
           };
 
-      // 創建呼吸燈效果的 Circle
+      // 創建呼吸燈效果的 Circle（使用偏移後的位置）
       const circle = new google.maps.Circle({
-        center: { lat, lng },
+        center: { lat: offsetLat, lng: offsetLng },
         radius: 25, // 起始半徑 25 公尺
         map,
         fillColor: "#FFC107", // 黃色
         fillOpacity: 0.25,
         strokeWeight: 0, // 無邊框
-        zIndex: 1000,
+        zIndex: 10, // 最底層
       });
       setPulseCircle(circle);
 
@@ -242,17 +259,17 @@ export const useMapMarkers = ({
       }, 80);
 
       const marker = new google.maps.Marker({
-        position: { lat, lng },
+        position: { lat: offsetLat, lng: offsetLng },
         map,
         title: nickname || "我的位置",
         icon,
         optimized: false,
-        zIndex: 1001,
+        zIndex: 90, // 低於 gateway 圖標 (100)，讓 gateway 可以被點擊
       });
 
-      // 點擊頭像圖標時 zoom in
+      // 點擊頭像圖標時 zoom in（使用原始位置，而非偏移位置）
       marker.addListener("click", () => {
-        map.panTo({ lat, lng });
+        map.panTo({ lat, lng }); // 原始活動位置
         map.setZoom(18);
       });
 
@@ -276,7 +293,7 @@ export const useMapMarkers = ({
 
 const getGatewayColor = (gateway: Gateway): string => {
   // 如果是商家且有優惠活動，顯示黃色
-  if (gateway.isAD && gateway.activityTitle?.trim()) {
+  if (gateway.store && gateway.store.activityTitle?.trim()) {
     return "#FFC107"; // 黃色
   }
 
@@ -318,7 +335,7 @@ const createGatewayIcon = (gateway: Gateway) => {
 
 const getGatewaySvgPath = (gateway: Gateway): string => {
   // 如果是商家且有優惠活動，顯示 campaign 圖標
-  if (gateway.isAD && gateway.activityTitle?.trim()) {
+  if (gateway.store && gateway.store.activityTitle?.trim()) {
     // Material Symbols: campaign (擴音器/活動圖標)
     return '<path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z" fill="white"/>';
   }
@@ -367,8 +384,14 @@ const createClusterIcon = (count: number) => {
 
   const svg = `
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 2}" fill="${color}" stroke="white" stroke-width="2" opacity="0.9" />
-      <text x="${size / 2}" y="${size / 2}" text-anchor="middle" dominant-baseline="central" fill="white" font-size="${size / 2.8}" font-family="Arial Black, Helvetica, sans-serif" font-weight="900">
+      <circle cx="${size / 2}" cy="${size / 2}" r="${
+    size / 2 - 2
+  }" fill="${color}" stroke="white" stroke-width="2" opacity="0.9" />
+      <text x="${size / 2}" y="${
+    size / 2
+  }" text-anchor="middle" dominant-baseline="central" fill="white" font-size="${
+    size / 2.8
+  }" font-family="Arial Black, Helvetica, sans-serif" font-weight="900">
         ${count}
       </text>
     </svg>

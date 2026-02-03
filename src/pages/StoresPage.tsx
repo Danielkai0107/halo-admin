@@ -1,19 +1,33 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Edit, Globe, Upload, Loader2, Lock, Eye } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Eye,
+  Upload,
+  Loader2,
+  Users,
+  Wifi,
+  Store as StoreIconLucide,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
-import { gatewayService } from "../services/gatewayService";
+import { storeService } from "../services/storeService";
 import { uploadStoreImage } from "../services/storageService";
-import type { Gateway } from "../types";
+import type { Store, ShopUser, Gateway } from "../types";
 import { Modal } from "../components/Modal";
 
-/** 商店管理：僅管理 isAD 為 true 的 gateway 之店家資訊（名稱、logo、圖片、官網、活動標題/內容） */
 export const StoresPage = () => {
   const navigate = useNavigate();
-  const [stores, setStores] = useState<Gateway[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeAdmins, setStoreAdmins] = useState<Record<string, ShopUser[]>>(
+    {},
+  );
+  const [storeGateways, setStoreGateways] = useState<Record<string, Gateway[]>>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editingGateway, setEditingGateway] = useState<Gateway | null>(null);
+  const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string>("");
@@ -42,67 +56,63 @@ export const StoresPage = () => {
   }, [watchBanner]);
 
   useEffect(() => {
-    const unsubscribe = gatewayService.subscribe(
-      (data) => {
-        const adGateways = data.filter((g) => g.isAD === true);
-        setStores(adGateways);
-        setLoading(false);
-      },
-      undefined,
-      undefined,
-    );
+    const unsubscribe = storeService.subscribe((data) => {
+      setStores(data);
+      setLoading(false);
+
+      // 載入每個商店的管理員和 Gateway
+      data.forEach(async (store) => {
+        try {
+          const adminsResponse = await storeService.getAdmins(store.id);
+          setStoreAdmins((prev) => ({
+            ...prev,
+            [store.id]: adminsResponse.data,
+          }));
+
+          const gatewaysResponse = await storeService.getGateways(store.id);
+          setStoreGateways((prev) => ({
+            ...prev,
+            [store.id]: gatewaysResponse.data,
+          }));
+        } catch (error) {
+          console.error(`Failed to load data for store ${store.id}:`, error);
+        }
+      });
+    });
+
     return () => unsubscribe();
   }, []);
 
   const handleCreate = () => {
-    setEditingGateway(null);
-    const now = new Date();
-    const year = String(now.getFullYear()).slice(-2);
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const prefix = `g-${year}-${month}-`;
-    const currentMonth = stores.filter(
-      (g) => g.serialNumber && g.serialNumber.startsWith(prefix),
-    );
-    const nextNum =
-      currentMonth.length > 0
-        ? Math.max(
-            ...currentMonth.map((g) => {
-              const m = g.serialNumber?.match(new RegExp(`${prefix}(\\d+)`));
-              return m ? parseInt(m[1], 10) : 0;
-            }),
-          ) + 1
-        : 1;
-    const serialNumber = `${prefix}${String(nextNum).padStart(4, "0")}`;
-
+    setEditingStore(null);
     reset({
-      location: "",
+      name: "",
       storeLogo: "",
       imageLink: "",
       websiteLink: "",
       activityTitle: "",
       activityContent: "",
       storePassword: "",
-      serialNumber,
     });
     setLogoPreview("");
     setBannerPreview("");
     setShowModal(true);
   };
 
-  const handleEdit = (gateway: Gateway, e?: React.MouseEvent) => {
+  const handleEdit = (store: Store, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setEditingGateway(gateway);
+    setEditingStore(store);
     reset({
-      location: gateway.location ?? "",
-      storeLogo: gateway.storeLogo ?? "",
-      imageLink: gateway.imageLink ?? "",
-      websiteLink: gateway.websiteLink ?? "",
-      activityTitle: gateway.activityTitle ?? "",
-      activityContent: gateway.activityContent ?? "",
+      name: store.name ?? "",
+      storeLogo: store.storeLogo ?? "",
+      imageLink: store.imageLink ?? "",
+      websiteLink: store.websiteLink ?? "",
+      activityTitle: store.activityTitle ?? "",
+      activityContent: store.activityContent ?? "",
       storePassword: "", // 編輯時不預填，留空表示不變，有輸入則更新
     });
-    setLogoPreview(gateway.storeLogo || "");
-    setBannerPreview(gateway.imageLink || "");
+    setLogoPreview(store.storeLogo || "");
+    setBannerPreview(store.imageLink || "");
     setShowModal(true);
   };
 
@@ -147,8 +157,9 @@ export const StoresPage = () => {
   const onSubmit = async (data: Record<string, string>) => {
     try {
       // 只包含有值的欄位，避免 undefined 寫入 Firestore
-      const payload: Record<string, string> = {
-        location: data.location,
+      const payload: any = {
+        name: data.name,
+        adminIds: editingStore?.adminIds || [],
       };
 
       if (data.storeLogo?.trim()) {
@@ -171,18 +182,12 @@ export const StoresPage = () => {
         payload.storePassword = data.storePassword.trim();
       }
 
-      if (editingGateway) {
-        await gatewayService.update(editingGateway.id, payload);
-        alert("商家資訊已更新");
+      if (editingStore) {
+        await storeService.update(editingStore.id, payload);
+        alert("商店資訊已更新");
       } else {
-        await gatewayService.create({
-          serialNumber: data.serialNumber,
-          type: "SAFE_ZONE",
-          isActive: true,
-          isAD: true,
-          ...payload,
-        });
-        alert("店家已新增");
+        await storeService.create(payload);
+        alert("商店已新增");
       }
       setShowModal(false);
     } catch (err: any) {
@@ -200,8 +205,8 @@ export const StoresPage = () => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">商店管理</h2>
           <p className="text-sm text-gray-600 mt-1">
-            管理行銷點（isAD）店家資訊：名稱、logo、圖片、官網、活動標題與內容。實際
-            Gateway 資料請至 GateWay 管理維護。
+            管理商店資訊：名稱、logo、圖片、官網、活動標題與內容。可分配管理員和綁定
+            Gateway。
           </p>
         </div>
         <button
@@ -209,7 +214,7 @@ export const StoresPage = () => {
           className="btn-primary flex items-center space-x-2"
         >
           <Plus className="w-5 h-5" />
-          <span>新增店家</span>
+          <span>新增商店</span>
         </button>
       </div>
 
@@ -219,25 +224,19 @@ export const StoresPage = () => {
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                  店家名稱
+                  商店名稱
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
                   店家 Logo
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                  圖片連結
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                  官網連結
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
                   活動標題
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                  活動內容
+                  管理員
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                  密碼
+                  Gateway
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 w-24">
                   操作
@@ -247,31 +246,33 @@ export const StoresPage = () => {
             <tbody>
               {stores.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-gray-500">
-                    尚無店家。請先在 GateWay
-                    管理將接收點設為「行銷點」，或在此頁「新增店家」。
+                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                    尚無商店。請點擊「新增商店」建立第一個商店。
                   </td>
                 </tr>
               ) : (
-                stores.map((g) => (
+                stores.map((store) => (
                   <tr
-                    key={g.id}
-                    onClick={() => navigate(`/stores/${g.id}`)}
+                    key={store.id}
+                    onClick={() => navigate(`/stores/${store.id}`)}
                     className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
                   >
                     <td className="py-3 px-4 text-sm font-medium text-gray-900">
-                      {g.location || "-"}
+                      <div className="flex items-center gap-2">
+                        <StoreIconLucide className="w-4 h-4 text-primary-500" />
+                        {store.name || "-"}
+                      </div>
                     </td>
                     <td className="py-3 px-4">
-                      {g.storeLogo ? (
+                      {store.storeLogo ? (
                         <div className="flex items-center gap-2">
                           <img
-                            src={g.storeLogo}
+                            src={store.storeLogo}
                             alt="Logo"
                             className="w-10 h-10 object-cover rounded border border-gray-200"
                           />
                           <a
-                            href={g.storeLogo}
+                            href={store.storeLogo}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
@@ -281,70 +282,44 @@ export const StoresPage = () => {
                             查看
                           </a>
                         </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {g.imageLink ? (
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={g.imageLink}
-                            alt="Banner"
-                            className="w-20 h-8 object-cover rounded border border-gray-200"
-                          />
-                          <a
-                            href={g.imageLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center text-primary-600 hover:underline text-xs"
-                          >
-                            <Eye className="w-3 h-3 mr-1" />
-                            查看
-                          </a>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {g.websiteLink ? (
-                        <a
-                          href={g.websiteLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center text-primary-600 hover:underline"
-                        >
-                          <Globe className="w-4 h-4 mr-1" />
-                          官網
-                        </a>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700 max-w-[160px] truncate">
-                      {g.activityTitle || "-"}
+                      {store.activityTitle || "-"}
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-600 max-w-[200px] truncate">
-                      {g.activityContent || "-"}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {g.storePassword ? (
-                        <span className="inline-flex items-center gap-1 text-green-700">
-                          <Lock className="w-4 h-4" />
-                          已設定
-                        </span>
+                    <td className="py-3 px-4 text-sm">
+                      {storeAdmins[store.id] &&
+                      storeAdmins[store.id].length > 0 ? (
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4 text-blue-500" />
+                          <span className="text-blue-700 font-medium">
+                            {storeAdmins[store.id].length} 位
+                          </span>
+                        </div>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-gray-400">未分配</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-sm">
+                      {storeGateways[store.id] &&
+                      storeGateways[store.id].length > 0 ? (
+                        <div className="flex items-center gap-1">
+                          <Wifi className="w-4 h-4 text-green-500" />
+                          <span className="text-green-700 font-medium">
+                            {storeGateways[store.id].length} 個
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">未綁定</span>
                       )}
                     </td>
                     <td className="py-3 px-4">
                       <button
-                        onClick={(e) => handleEdit(g, e)}
+                        onClick={(e) => handleEdit(store, e)}
                         className="text-primary-600 hover:text-primary-700 p-1"
-                        title="編輯店家資訊"
+                        title="編輯商店資訊"
                       >
                         <Edit className="w-5 h-5" />
                       </button>
@@ -356,44 +331,33 @@ export const StoresPage = () => {
           </table>
         </div>
         <div className="mt-4 text-sm text-gray-600">
-          共 {stores.length} 個店家
+          共 {stores.length} 個商店
         </div>
       </div>
 
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editingGateway ? "編輯店家資訊" : "新增店家"}
+        title={editingStore ? "編輯商店資訊" : "新增商店"}
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {!editingGateway && (
-            <div>
-              <label className="label">接收點序號（自動產生）</label>
-              <input
-                {...register("serialNumber")}
-                className="input bg-gray-50"
-                readOnly
-                disabled
-              />
-            </div>
-          )}
           <div>
-            <label className="label">店家名稱（位置描述）*</label>
+            <label className="label">
+              商店名稱 <span className="text-red-500">*</span>
+            </label>
             <input
-              {...register("location", { required: "請填寫店家名稱" })}
+              {...register("name", { required: "請填寫商店名稱" })}
               className="input"
               placeholder="例如：星巴克信義店、7-11光復門市"
             />
-            {errors.location && (
+            {errors.name && (
               <p className="text-sm text-red-600 mt-1">
-                {(errors.location as { message?: string })?.message}
+                {(errors.name as { message?: string })?.message}
               </p>
             )}
-            <p className="text-xs text-gray-500 mt-1">
-              此欄位對應 Gateway 的「位置描述」(location)
-            </p>
           </div>
+
           <div>
             <label className="label">店家 Logo (建議 1:1 比例)</label>
             {logoPreview && (
@@ -438,6 +402,7 @@ export const StoresPage = () => {
               建議尺寸：400x400 或更高（1:1 比例）
             </p>
           </div>
+
           <div>
             <label className="label">店家 Banner (建議 3:1 比例)</label>
             {bannerPreview && (
@@ -482,6 +447,7 @@ export const StoresPage = () => {
               建議尺寸：1200x400 或更高（3:1 比例）
             </p>
           </div>
+
           <div>
             <label className="label">官網連結</label>
             <input
@@ -490,6 +456,7 @@ export const StoresPage = () => {
               placeholder="https://..."
             />
           </div>
+
           <div>
             <label className="label">活動標題</label>
             <input
@@ -498,6 +465,7 @@ export const StoresPage = () => {
               placeholder="活動標題"
             />
           </div>
+
           <div>
             <label className="label">活動內容</label>
             <textarea
@@ -507,6 +475,7 @@ export const StoresPage = () => {
               rows={3}
             />
           </div>
+
           <div>
             <label className="label">商家密碼（選填）</label>
             <input
@@ -514,7 +483,7 @@ export const StoresPage = () => {
               {...register("storePassword")}
               className="input"
               placeholder={
-                editingGateway ? "留空表示不變" : "供商家簡單登入驗證用"
+                editingStore ? "留空表示不變" : "供商家簡單登入驗證用"
               }
               autoComplete="new-password"
             />
@@ -522,6 +491,7 @@ export const StoresPage = () => {
               供商家之後以簡單登入驗證用，選填。編輯時留空則不變更原密碼。
             </p>
           </div>
+
           <div className="flex items-center justify-end space-x-3 pt-4 border-t">
             <button
               type="button"
@@ -531,7 +501,7 @@ export const StoresPage = () => {
               取消
             </button>
             <button type="submit" className="btn-primary">
-              {editingGateway ? "更新" : "新增"}
+              {editingStore ? "更新" : "新增"}
             </button>
           </div>
         </form>

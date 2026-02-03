@@ -236,12 +236,14 @@ interface NotificationPointData {
   longitude: number;
   timestamp: string;
   // 商家相關資訊
-  isAD?: boolean;
-  storeLogo?: string;
-  imageLink?: string;
-  activityTitle?: string;
-  activityContent?: string;
-  websiteLink?: string;
+  store?: {
+    name: string;
+    storeLogo?: string;
+    imageLink?: string;
+    activityTitle?: string;
+    activityContent?: string;
+    websiteLink?: string;
+  };
 }
 
 export const sendNotificationPointAlert = async (
@@ -263,7 +265,7 @@ export const sendNotificationPointAlert = async (
   });
 
   const deviceName = data.deviceNickname || "您的設備";
-  const isStore = data.isAD === true;
+  const isStore = !!data.store;
 
   // 建立 Flex Message
   const flexMessage: FlexMessage = {
@@ -272,11 +274,11 @@ export const sendNotificationPointAlert = async (
     contents: {
       type: "bubble",
       // Header: 3:1 Banner 圖片（商家才有）
-      ...(isStore && data.imageLink
+      ...(isStore && data.store?.imageLink
         ? {
             hero: {
               type: "image" as const,
-              url: data.imageLink,
+              url: data.store.imageLink,
               size: "full" as const,
               aspectRatio: "3:1" as const,
               aspectMode: "cover" as const,
@@ -394,7 +396,8 @@ export const sendNotificationPointAlert = async (
         paddingAll: "lg" as const,
         contents: [
           // 商家優惠內容（如果是商家且有優惠活動）
-          ...(data.isAD && (data.activityTitle || data.activityContent)
+          ...(data.store &&
+          (data.store.activityTitle || data.store.activityContent)
             ? [
                 {
                   type: "separator" as const,
@@ -416,11 +419,11 @@ export const sendNotificationPointAlert = async (
                       weight: "bold" as const,
                     },
                     // 優惠標題
-                    ...(data.activityTitle
+                    ...(data.store.activityTitle
                       ? [
                           {
                             type: "text" as const,
-                            text: data.activityTitle,
+                            text: data.store.activityTitle,
                             size: "md" as const,
                             weight: "bold" as const,
                             wrap: true,
@@ -429,11 +432,11 @@ export const sendNotificationPointAlert = async (
                         ]
                       : []),
                     // 優惠內容
-                    ...(data.activityContent
+                    ...(data.store.activityContent
                       ? [
                           {
                             type: "text" as const,
-                            text: data.activityContent,
+                            text: data.store.activityContent,
                             size: "sm" as const,
                             color: "#666666",
                             wrap: true,
@@ -468,7 +471,7 @@ export const sendNotificationPointAlert = async (
                 },
               },
               // 店家資訊按鈕（如果是商家且有網站連結）
-              ...(data.isAD && data.websiteLink
+              ...(data.store?.websiteLink
                 ? [
                     {
                       type: "button" as const,
@@ -477,7 +480,7 @@ export const sendNotificationPointAlert = async (
                       action: {
                         type: "uri" as const,
                         label: "店家資訊",
-                        uri: data.websiteLink,
+                        uri: data.store.websiteLink,
                       },
                     },
                   ]

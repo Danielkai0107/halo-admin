@@ -205,6 +205,7 @@ const sendNotification = async (lineUserId, channelAccessToken, message) => {
 };
 exports.sendNotification = sendNotification;
 const sendNotificationPointAlert = async (lineUserId, channelAccessToken, data) => {
+    var _a, _b;
     const client = new bot_sdk_1.Client({
         channelAccessToken,
     });
@@ -217,16 +218,16 @@ const sendNotificationPointAlert = async (lineUserId, channelAccessToken, data) 
         minute: "2-digit",
     });
     const deviceName = data.deviceNickname || "您的設備";
-    const isStore = data.isAD === true;
+    const isStore = !!data.store;
     // 建立 Flex Message
     const flexMessage = {
         type: "flex",
         altText: `通知點警報：${data.gatewayName}`,
-        contents: Object.assign(Object.assign({ type: "bubble" }, (isStore && data.imageLink
+        contents: Object.assign(Object.assign({ type: "bubble" }, (isStore && ((_a = data.store) === null || _a === void 0 ? void 0 : _a.imageLink)
             ? {
                 hero: {
                     type: "image",
-                    url: data.imageLink,
+                    url: data.store.imageLink,
                     size: "full",
                     aspectRatio: "3:1",
                     aspectMode: "cover",
@@ -342,7 +343,8 @@ const sendNotificationPointAlert = async (lineUserId, channelAccessToken, data) 
                 paddingAll: "lg",
                 contents: [
                     // 商家優惠內容（如果是商家且有優惠活動）
-                    ...(data.isAD && (data.activityTitle || data.activityContent)
+                    ...(data.store &&
+                        (data.store.activityTitle || data.store.activityContent)
                         ? [
                             {
                                 type: "separator",
@@ -364,11 +366,11 @@ const sendNotificationPointAlert = async (lineUserId, channelAccessToken, data) 
                                         weight: "bold",
                                     },
                                     // 優惠標題
-                                    ...(data.activityTitle
+                                    ...(data.store.activityTitle
                                         ? [
                                             {
                                                 type: "text",
-                                                text: data.activityTitle,
+                                                text: data.store.activityTitle,
                                                 size: "md",
                                                 weight: "bold",
                                                 wrap: true,
@@ -377,11 +379,11 @@ const sendNotificationPointAlert = async (lineUserId, channelAccessToken, data) 
                                         ]
                                         : []),
                                     // 優惠內容
-                                    ...(data.activityContent
+                                    ...(data.store.activityContent
                                         ? [
                                             {
                                                 type: "text",
-                                                text: data.activityContent,
+                                                text: data.store.activityContent,
                                                 size: "sm",
                                                 color: "#666666",
                                                 wrap: true,
@@ -416,7 +418,7 @@ const sendNotificationPointAlert = async (lineUserId, channelAccessToken, data) 
                                 },
                             },
                             // 店家資訊按鈕（如果是商家且有網站連結）
-                            ...(data.isAD && data.websiteLink
+                            ...(((_b = data.store) === null || _b === void 0 ? void 0 : _b.websiteLink)
                                 ? [
                                     {
                                         type: "button",
@@ -425,7 +427,7 @@ const sendNotificationPointAlert = async (lineUserId, channelAccessToken, data) 
                                         action: {
                                             type: "uri",
                                             label: "店家資訊",
-                                            uri: data.websiteLink,
+                                            uri: data.store.websiteLink,
                                         },
                                     },
                                 ]

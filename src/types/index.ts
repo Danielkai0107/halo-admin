@@ -43,6 +43,36 @@ export interface SaasUser {
   tenant?: Tenant;
 }
 
+// Shop User (商店管理員)
+export interface ShopUser {
+  id: string;
+  firebaseUid: string;
+  email: string;
+  name: string;
+  phone?: string;
+  avatar?: string;
+  role: "OWNER" | "STAFF";
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Store (商店)
+export interface Store {
+  id: string;
+  name: string;
+  storeLogo?: string;
+  imageLink?: string;
+  websiteLink?: string;
+  activityTitle?: string;
+  activityContent?: string;
+  storePassword?: string;
+  adminIds: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Tenant
 export interface Tenant {
   id: string;
@@ -215,14 +245,8 @@ export interface Gateway {
   longitude?: number;
   deviceInfo?: any;
   isActive: boolean;
-  isAD?: boolean; // 行銷點（店家）
-  // 店家專用欄位（isAD 為 true 時使用）
-  storeLogo?: string; // 店家 logo 連結
-  imageLink?: string; // 圖片連結
-  websiteLink?: string; // 官網連結
-  activityTitle?: string; // 活動標題
-  activityContent?: string; // 活動內容
-  storePassword?: string; // 商家簡單登入驗證用密碼
+  storeId?: string | null; // 綁定的商店 ID
+  store?: Store; // 關聯的商店資料（join 後）
   tenant?: Tenant;
 }
 

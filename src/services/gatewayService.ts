@@ -9,7 +9,7 @@ import {
   subscribeToDocument,
   toPaginatedResponse,
 } from "../lib/firestore";
-import type { Gateway, GatewayType } from "../types";
+import type { Gateway, GatewayType, Store } from "../types";
 
 export const gatewayService = {
   // 獲取所有閘道器（分頁）
@@ -90,15 +90,15 @@ export const gatewayService = {
     return subscribeToDocument<Gateway>("gateways", id, callback);
   },
 
-  // 新增閘道器（可選擇標記所在社區）
+  // 新增閘道器（可選擇標記所在社區或綁定商店）
   create: async (data: Partial<Gateway>) => {
     try {
       const id = await createDocument("gateways", {
         ...data,
         type: data.type || "SAFE_ZONE",
         // tenantId 可以是 null 或社區 ID（僅用於標記位置）
+        storeId: data.storeId || null,
         isActive: data.isActive !== undefined ? data.isActive : true,
-        isAD: data.isAD !== undefined ? data.isAD : false,
       });
       const gateway = await getDocument<Gateway>("gateways", id);
       return { data: gateway };
@@ -129,5 +129,122 @@ export const gatewayService = {
       console.error("Failed to delete gateway:", error);
       throw error;
     }
+  },
+
+  // 獲取單個閘道器（包含 Store 資料）
+  getOneWithStore: async (id: string) => {
+    try {
+      const gateway = await getDocument<Gateway>("gateways", id);
+      if (!gateway) {
+        return { data: null };
+      }
+
+      // 如果有 storeId，join Store 資料
+      if (gateway.storeId) {
+        const store = await getDocument<Store>("stores", gateway.storeId);
+        if (store) {
+          gateway.store = store;
+        }
+      }
+
+      return { data: gateway };
+    } catch (error) {
+      console.error("Failed to get gateway with store:", error);
+      throw error;
+    }
+  },
+
+  // 獲取所有閘道器（包含 Store 資料）
+  getAllWithStore: async (
+    page: number = 1,
+    limit: number = 10,
+    tenantId?: string,
+    type?: GatewayType,
+  ) => {
+    try {
+      const constraints = [];
+
+      if (tenantId) {
+        constraints.push(where("tenantId", "==", tenantId));
+      }
+      if (type) {
+        constraints.push(where("type", "==", type));
+      }
+
+      constraints.push(orderBy("createdAt", "desc"));
+
+      const allGateways = await getAllDocuments<Gateway>(
+        "gateways",
+        constraints,
+      );
+
+      // Join Store 資料
+      const gatewaysWithStore = await Promise.all(
+        allGateways.map(async (gateway) => {
+          if (gateway.storeId) {
+            const store = await getDocument<Store>("stores", gateway.storeId);
+            if (store) {
+              gateway.store = store;
+            }
+          }
+          return gateway;
+        }),
+      );
+
+      // 手動實現分頁
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedData = gatewaysWithStore.slice(startIndex, endIndex);
+
+      const response = toPaginatedResponse(
+        paginatedData,
+        page,
+        limit,
+        gatewaysWithStore.length,
+      );
+      return { data: response };
+    } catch (error) {
+      console.error("Failed to get gateways with store:", error);
+      throw error;
+    }
+  },
+
+  // 訂閱閘道器列表（即時監聽，包含 Store 資料）
+  subscribeWithStore: (
+    callback: (data: Gateway[]) => void,
+    tenantId?: string,
+    type?: GatewayType,
+  ) => {
+    const constraints = [];
+
+    if (tenantId) {
+      constraints.push(where("tenantId", "==", tenantId));
+    }
+    if (type) {
+      constraints.push(where("type", "==", type));
+    }
+
+    constraints.push(orderBy("createdAt", "desc"));
+
+    return subscribeToCollection<Gateway>(
+      "gateways",
+      constraints,
+      async (gateways) => {
+        // Join Store 資料
+        const gatewaysWithStore = await Promise.all(
+          gateways.map(async (gateway) => {
+            if (gateway.storeId) {
+              const store = await getDocument<Store>("stores", gateway.storeId);
+              if (store) {
+                gateway.store = store;
+              }
+            }
+            return gateway;
+          }),
+        );
+
+        callback(gatewaysWithStore);
+      },
+    );
   },
 };

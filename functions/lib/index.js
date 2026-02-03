@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getLineUserActivities = exports.getLineUserNotificationPoints = exports.removeLineUserNotificationPoint = exports.addLineUserNotificationPoint = exports.updateLineUserDeviceProfile = exports.unbindDeviceFromLineUser = exports.bindDeviceToLineUser = exports.getMapUserProfile = exports.getMapUserActivities = exports.updateMapUserNotificationPoint = exports.getMapUserNotificationPoints = exports.removeMapUserNotificationPoint = exports.addMapUserNotificationPoint = exports.getPublicGateways = exports.unbindDeviceFromMapUser = exports.bindDeviceToMapUser = exports.updateMapUserFcmToken = exports.mapUserAuth = exports.getServiceUuids = exports.getDeviceWhitelist = exports.minewGateway = exports.receiveBeaconData = exports.getTenantFollowers = exports.verifyUserTenant = exports.lineWebhook = exports.checkInactiveElders = exports.completeAlert = exports.declineAlertAssignment = exports.acceptAlertAssignment = exports.assignAlert = void 0;
+exports.rollbackStoreMigration = exports.migrateStoreData = exports.getLineUserActivities = exports.getLineUserNotificationPoints = exports.removeLineUserNotificationPoint = exports.addLineUserNotificationPoint = exports.updateLineUserDeviceProfile = exports.unbindDeviceFromLineUser = exports.bindDeviceToLineUser = exports.getMapUserProfile = exports.getMapUserActivities = exports.updateMapUserNotificationPoint = exports.getMapUserNotificationPoints = exports.removeMapUserNotificationPoint = exports.addMapUserNotificationPoint = exports.getPublicGateways = exports.unbindDeviceFromMapUser = exports.bindDeviceToMapUser = exports.updateMapUserFcmToken = exports.mapUserAuth = exports.getServiceUuids = exports.getDeviceWhitelist = exports.minewGateway = exports.receiveBeaconData = exports.getTenantFollowers = exports.verifyUserTenant = exports.lineWebhook = exports.checkInactiveElders = exports.completeAlert = exports.declineAlertAssignment = exports.acceptAlertAssignment = exports.assignAlert = void 0;
 const admin = __importStar(require("firebase-admin"));
 const assignment_1 = require("./alerts/assignment");
 Object.defineProperty(exports, "assignAlert", { enumerable: true, get: function () { return assignment_1.assignAlert; } });
@@ -88,6 +88,10 @@ Object.defineProperty(exports, "removeLineUserNotificationPoint", { enumerable: 
 Object.defineProperty(exports, "getLineUserNotificationPoints", { enumerable: true, get: function () { return lineUserNotificationPoints_1.getLineUserNotificationPoints; } });
 const lineUserActivities_1 = require("./mapApp/lineUserActivities");
 Object.defineProperty(exports, "getLineUserActivities", { enumerable: true, get: function () { return lineUserActivities_1.getLineUserActivities; } });
+// Migrations
+const migrateStoreData_1 = require("./migrations/migrateStoreData");
+Object.defineProperty(exports, "migrateStoreData", { enumerable: true, get: function () { return migrateStoreData_1.migrateStoreData; } });
+Object.defineProperty(exports, "rollbackStoreMigration", { enumerable: true, get: function () { return migrateStoreData_1.rollbackStoreMigration; } });
 // Initialize Firebase Admin
 admin.initializeApp();
 //# sourceMappingURL=index.js.map

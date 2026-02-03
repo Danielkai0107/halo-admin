@@ -107,8 +107,8 @@ export const MapScreen = () => {
         boundDevice?.mapUserGender === "FEMALE"
           ? elderFemaleAvatar
           : boundDevice?.mapUserGender === "MALE"
-            ? elderMaleAvatar
-            : undefined,
+          ? elderMaleAvatar
+          : undefined,
       nickname: boundDevice?.mapUserNickname || boundDevice?.deviceName,
     };
   }, [
@@ -601,16 +601,22 @@ export const MapScreen = () => {
   const dateGroups: DateGroupType[] = Array.from(activityMap.entries()).map(
     ([date, acts]) => ({
       date,
-      activities: acts.map((activity, index) => ({
-        id: activity.id,
-        gatewayId: activity.gatewayId,
-        gatewayName: activity.gatewayName,
-        message: `已通過：${activity.gatewayName}`,
-        time: activityService.formatActivityTime(activity.timestamp),
-        timestamp: new Date(activity.timestamp),
-        isLatest: index === 0 && activityService.isToday(activity.timestamp),
-        hasNotification: activity.triggeredNotification,
-      })),
+      activities: acts.map((activity, index) => {
+        // 優先使用 gateway.location，fallback 到 activity.gatewayName
+        const gateway = gateways.find((g) => g.id === activity.gatewayId);
+        const displayName =
+          gateway?.location || activity.gatewayName || "未知位置";
+        return {
+          id: activity.id,
+          gatewayId: activity.gatewayId,
+          gatewayName: displayName,
+          message: `已通過：${displayName}`,
+          time: activityService.formatActivityTime(activity.timestamp),
+          timestamp: new Date(activity.timestamp),
+          isLatest: index === 0 && activityService.isToday(activity.timestamp),
+          hasNotification: activity.triggeredNotification,
+        };
+      }),
     }),
   );
 
@@ -731,7 +737,9 @@ export const MapScreen = () => {
 
         {/* 回到我的位置按鈕 */}
         <button
-          className={`floating-button action-btn ${isLocating ? "locating" : ""}`}
+          className={`floating-button action-btn ${
+            isLocating ? "locating" : ""
+          }`}
           id="myLocationBtn"
           aria-label="回到我的位置"
           onClick={handleMyLocation}
@@ -987,7 +995,10 @@ export const MapScreen = () => {
                       activePanel === "statistics" ? "auto" : "none",
                   }}
                 >
-                  <StatisticsPanel activities={activities} />
+                  <StatisticsPanel
+                    activities={activities}
+                    gateways={gateways}
+                  />
                 </div>
               </div>
             )}
@@ -1225,9 +1236,9 @@ export const MapScreen = () => {
         onClose={() => setIsGatewayModalOpen(false)}
         title={selectedGateway?.location || "接收點詳情"}
         titleBadge={
-          selectedGateway?.isAD && selectedGateway?.storeLogo ? (
+          selectedGateway?.store && selectedGateway?.store.storeLogo ? (
             <img
-              src={selectedGateway.storeLogo}
+              src={selectedGateway.store.storeLogo}
               alt="店家Logo"
               style={{
                 width: "48px",
@@ -1256,7 +1267,9 @@ export const MapScreen = () => {
               </div>
               <div className="gateway-badges">
                 <span
-                  className={`badge badge-${selectedGateway.type.toLowerCase().replace("_", "-")}`}
+                  className={`badge badge-${selectedGateway.type
+                    .toLowerCase()
+                    .replace("_", "-")}`}
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     {selectedGateway.type === "SAFE_ZONE" && (
@@ -1271,7 +1284,7 @@ export const MapScreen = () => {
                   </svg>
                   {getGatewayTypeLabel(selectedGateway.type)}
                 </span>
-                {selectedGateway.isAD && (
+                {selectedGateway.store && (
                   <span
                     className="badge"
                     style={{
@@ -1293,8 +1306,8 @@ export const MapScreen = () => {
               </div>
             </div>
 
-            {/* 商家優惠區塊 - 僅在 isAD 為 true 時顯示 */}
-            {selectedGateway.isAD && (
+            {/* 商家優惠區塊 - 僅在有關聯商店時顯示 */}
+            {selectedGateway.store && (
               <>
                 <div
                   style={{
@@ -1315,7 +1328,7 @@ export const MapScreen = () => {
                     商家優惠
                   </h3>
 
-                  {selectedGateway.imageLink && (
+                  {selectedGateway.store.imageLink && (
                     <div
                       style={{
                         position: "relative",
@@ -1328,7 +1341,7 @@ export const MapScreen = () => {
                       }}
                     >
                       <img
-                        src={selectedGateway.imageLink}
+                        src={selectedGateway.store.imageLink}
                         alt="優惠活動"
                         style={{
                           position: "absolute",
@@ -1343,7 +1356,7 @@ export const MapScreen = () => {
                     </div>
                   )}
 
-                  {selectedGateway.activityTitle && (
+                  {selectedGateway.store.activityTitle && (
                     <h4
                       style={{
                         fontSize: "16px",
@@ -1353,11 +1366,11 @@ export const MapScreen = () => {
                         textAlign: "left",
                       }}
                     >
-                      {selectedGateway.activityTitle}
+                      {selectedGateway.store.activityTitle}
                     </h4>
                   )}
 
-                  {selectedGateway.activityContent && (
+                  {selectedGateway.store.activityContent && (
                     <p
                       style={{
                         fontSize: "14px",
@@ -1367,13 +1380,13 @@ export const MapScreen = () => {
                         whiteSpace: "pre-wrap",
                       }}
                     >
-                      {selectedGateway.activityContent}
+                      {selectedGateway.store.activityContent}
                     </p>
                   )}
 
-                  {selectedGateway.websiteLink && (
+                  {selectedGateway.store.websiteLink && (
                     <a
-                      href={selectedGateway.websiteLink}
+                      href={selectedGateway.store.websiteLink}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
@@ -1594,7 +1607,9 @@ export const MapScreen = () => {
                         }}
                       >
                         <span
-                          className={`badge badge-${gateway.type.toLowerCase().replace("_", "-")}`}
+                          className={`badge badge-${gateway.type
+                            .toLowerCase()
+                            .replace("_", "-")}`}
                         >
                           {getGatewayTypeLabel(gateway.type)}
                         </span>

@@ -9,12 +9,17 @@ import {
   calculateHotspots,
   getPeakActivityTime,
 } from "../../utils/statisticsHelper";
+import type { Gateway } from "../../types";
 
 interface StatisticsPanelProps {
   activities: DeviceActivity[];
+  gateways?: Gateway[];
 }
 
-export const StatisticsPanel = ({ activities }: StatisticsPanelProps) => {
+export const StatisticsPanel = ({
+  activities,
+  gateways = [],
+}: StatisticsPanelProps) => {
   // Merge consecutive same-location activities for statistics
   // This ensures that continuous detection at the same location counts as one
   const mergedActivities = mergeConsecutiveActivities(activities);
@@ -22,6 +27,12 @@ export const StatisticsPanel = ({ activities }: StatisticsPanelProps) => {
   const hourlyData = calculateHourlyActivity(mergedActivities);
   const dailyData = calculateDailyActivity(mergedActivities);
   const hotspots = calculateHotspots(mergedActivities, 5);
+
+  // 優先使用 gateway.location 作為顯示名稱
+  const getDisplayName = (gatewayId: string, fallbackName: string): string => {
+    const gateway = gateways.find((g) => g.id === gatewayId);
+    return gateway?.location || fallbackName || "未知位置";
+  };
 
   const maxHourlyCount = Math.max(...hourlyData.map((d) => d.count), 1);
   const maxDailyCount = Math.max(...dailyData.map((d) => d.count), 1);
@@ -164,7 +175,7 @@ export const StatisticsPanel = ({ activities }: StatisticsPanelProps) => {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {hotspot.gatewayName}
+                    {getDisplayName(hotspot.gatewayId, hotspot.gatewayName)}
                   </div>
                   <div
                     style={{
